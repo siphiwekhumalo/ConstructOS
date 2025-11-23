@@ -12,6 +12,7 @@ import DashboardEquipment from "@/pages/dashboard/equipment";
 import DashboardSafety from "@/pages/dashboard/safety";
 import DashboardIoT from "@/pages/dashboard/iot";
 import DashboardCRM from "@/pages/dashboard/crm";
+import DashboardReports from "@/pages/dashboard/reports";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -26,6 +27,7 @@ function Router() {
       <Route path="/dashboard/safety" component={DashboardSafety} />
       <Route path="/dashboard/iot" component={DashboardIoT} />
       <Route path="/dashboard/crm" component={DashboardCRM} />
+      <Route path="/dashboard/reports" component={DashboardReports} />
       <Route component={NotFound} />
     </Switch>
   );
