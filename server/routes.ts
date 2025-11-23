@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { seedDatabase } from "./seed";
 import {
   insertProjectSchema,
   insertTransactionSchema,
@@ -11,6 +12,10 @@ import {
 } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Seed database on startup (only in development)
+  if (process.env.NODE_ENV === "development") {
+    await seedDatabase().catch(console.error);
+  }
   // Projects API
   app.get("/api/projects", async (req, res) => {
     try {
