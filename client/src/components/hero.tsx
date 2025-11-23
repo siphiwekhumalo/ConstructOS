@@ -1,3 +1,4 @@
+import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, ShieldCheck, Cpu, Activity } from "lucide-react";
 import heroImage from "@assets/generated_images/futuristic_construction_site_with_digital_overlay.png";
@@ -29,9 +30,11 @@ export function Hero() {
             </p>
 
             <div className="flex flex-wrap gap-4">
-              <Button size="lg" className="rounded-none h-12 px-8 font-mono text-sm">
-                START BUILDING <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
+              <Link href="/dashboard">
+                <Button size="lg" className="rounded-none h-12 px-8 font-mono text-sm">
+                  START BUILDING <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </Link>
               <Button variant="outline" size="lg" className="rounded-none h-12 px-8 font-mono text-sm border-white/10 hover:bg-white/5">
                 VIEW DOCUMENTATION
               </Button>

@@ -1,3 +1,4 @@
+import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 
@@ -10,9 +11,11 @@ export function CTASection() {
           Join leading construction firms using our Python & Django powered platform to deliver projects on time and under budget.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Button size="lg" className="rounded-none h-14 px-8 text-lg font-mono">
-            SCHEDULE A DEMO <ArrowRight className="ml-2 h-5 w-5" />
-          </Button>
+          <Link href="/dashboard">
+            <Button size="lg" className="rounded-none h-14 px-8 text-lg font-mono">
+              SCHEDULE A DEMO <ArrowRight className="ml-2 h-5 w-5" />
+            </Button>
+          </Link>
           <Button variant="outline" size="lg" className="rounded-none h-14 px-8 text-lg font-mono border-white/10 hover:bg-white/5">
             CONTACT SALES
           </Button>
