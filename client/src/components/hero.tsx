@@ -2,10 +2,18 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, ShieldCheck, Cpu, Activity } from "lucide-react";
 import heroImage from "@assets/generated_images/futuristic_construction_site_with_digital_overlay.png";
+import { Suspense, lazy } from "react";
+
+const ThreeHeroBackground = lazy(() => import("@/components/three-background").then(m => ({ default: m.ThreeHeroBackground })));
 
 export function Hero() {
   return (
-    <section className="relative min-h-screen flex items-center pt-20 overflow-hidden border-b border-white/5">
+    <section className="relative min-h-screen flex items-center pt-20 overflow-hidden border-b border-border">
+      {/* 3D Particle Background - Lazy loaded */}
+      <Suspense fallback={<div className="absolute inset-0 -z-10 bg-gradient-to-br from-primary/5 to-transparent" />}>
+        <ThreeHeroBackground />
+      </Suspense>
+      
       {/* Grid Background */}
       <div className="absolute inset-0 grid-bg opacity-20 pointer-events-none" />
       
@@ -35,12 +43,12 @@ export function Hero() {
                   START BUILDING <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </Link>
-              <Button variant="outline" size="lg" className="rounded-none h-12 px-8 font-mono text-sm border-white/10 hover:bg-white/5">
+              <Button variant="outline" size="lg" className="rounded-none h-12 px-8 font-mono text-sm border-border hover:bg-secondary">
                 VIEW DOCUMENTATION
               </Button>
             </div>
 
-            <div className="grid grid-cols-3 gap-8 pt-8 border-t border-white/5">
+            <div className="grid grid-cols-3 gap-8 pt-8 border-t border-border">
               <div>
                 <div className="flex items-center gap-2 mb-2 text-primary">
                   <ShieldCheck className="h-5 w-5" />
@@ -66,7 +74,7 @@ export function Hero() {
           </div>
 
           <div className="relative">
-            <div className="aspect-video rounded-sm overflow-hidden border border-white/10 shadow-2xl relative group">
+            <div className="aspect-video rounded-sm overflow-hidden border border-border shadow-2xl relative group">
               <div className="absolute inset-0 bg-primary/10 mix-blend-overlay group-hover:bg-transparent transition-colors duration-500" />
               <img 
                 src={heroImage} 
@@ -75,17 +83,17 @@ export function Hero() {
               />
               
               {/* UI Overlay Elements */}
-              <div className="absolute top-4 right-4 bg-black/80 backdrop-blur-md border border-white/10 p-4 rounded-sm max-w-[200px]">
+              <div className="absolute top-4 right-4 bg-background/80 backdrop-blur-md border border-border p-4 rounded-sm max-w-[200px]">
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-[10px] font-mono text-muted-foreground">STATUS</span>
                   <span className="text-[10px] font-mono text-green-500">ACTIVE</span>
                 </div>
-                <div className="h-1 w-full bg-white/10 rounded-full overflow-hidden">
+                <div className="h-1 w-full bg-muted rounded-full overflow-hidden">
                   <div className="h-full bg-primary w-[75%]" />
                 </div>
               </div>
 
-              <div className="absolute bottom-4 left-4 bg-black/80 backdrop-blur-md border border-white/10 p-4 rounded-sm">
+              <div className="absolute bottom-4 left-4 bg-background/80 backdrop-blur-md border border-border p-4 rounded-sm">
                  <div className="text-[10px] font-mono text-primary mb-1">IoT SENSORS</div>
                  <div className="text-lg font-bold font-display">Zone A: Optimal</div>
               </div>
@@ -93,7 +101,7 @@ export function Hero() {
             
             {/* Decorative Elements behind */}
             <div className="absolute -z-10 -bottom-4 -right-4 w-full h-full border border-primary/20 rounded-sm" />
-            <div className="absolute -z-10 -top-4 -left-4 w-full h-full border border-white/5 rounded-sm" />
+            <div className="absolute -z-10 -top-4 -left-4 w-full h-full border border-border rounded-sm" />
           </div>
         </div>
       </div>

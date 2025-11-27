@@ -21,7 +21,7 @@ const features = [
 
 export function FeaturesCMS() {
   return (
-    <section id="features" className="py-24 bg-card border-y border-white/5">
+    <section id="features" className="py-24 bg-card border-y border-border">
       <div className="container mx-auto px-6">
         <div className="max-w-2xl mb-16">
           <h2 className="text-3xl md:text-4xl font-bold mb-4">Core Construction <br/> Management System</h2>
@@ -32,7 +32,7 @@ export function FeaturesCMS() {
 
         <div className="grid md:grid-cols-3 gap-6">
           {features.map((feature, index) => (
-            <Card key={index} className="bg-background border-white/5 hover:border-primary/50 transition-colors group relative overflow-hidden">
+            <Card key={index} className="bg-background border-border hover:border-primary/50 transition-all duration-300 group relative overflow-hidden hover:shadow-lg hover:shadow-primary/5">
               <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity">
                 <ArrowUpRight className="h-5 w-5 text-primary" />
               </div>

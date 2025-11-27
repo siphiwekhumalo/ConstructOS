@@ -91,7 +91,7 @@ export function AccountAutocomplete({
       </div>
 
       {isOpen && inputValue.length >= 2 && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-white/10 rounded-sm shadow-xl max-h-[300px] overflow-auto z-50">
+        <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-sm shadow-xl max-h-[300px] overflow-auto z-50">
           {isLoading && results.length === 0 && (
             <div className="p-4 text-center text-muted-foreground">
               <Loader2 className="h-5 w-5 animate-spin mx-auto mb-1" />
@@ -110,7 +110,7 @@ export function AccountAutocomplete({
             <div
               key={account.id}
               onClick={() => handleSelect(account)}
-              className="p-3 hover:bg-white/5 cursor-pointer transition-colors border-b border-white/5 last:border-0"
+              className="p-3 hover:bg-secondary cursor-pointer transition-colors border-b border-border last:border-0"
               data-testid={`account-option-${account.id}`}
             >
               <div className="flex items-center justify-between gap-2">
@@ -220,7 +220,7 @@ export function ProductAutocomplete({
       </div>
 
       {isOpen && inputValue.length >= 2 && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-white/10 rounded-sm shadow-xl max-h-[300px] overflow-auto z-50">
+        <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-sm shadow-xl max-h-[300px] overflow-auto z-50">
           {isLoading && results.length === 0 && (
             <div className="p-4 text-center text-muted-foreground">
               <Loader2 className="h-5 w-5 animate-spin mx-auto mb-1" />
@@ -239,7 +239,7 @@ export function ProductAutocomplete({
             <div
               key={product.id}
               onClick={() => handleSelect(product)}
-              className="p-3 hover:bg-white/5 cursor-pointer transition-colors border-b border-white/5 last:border-0"
+              className="p-3 hover:bg-secondary cursor-pointer transition-colors border-b border-border last:border-0"
               data-testid={`product-option-${product.id}`}
             >
               <div className="flex items-center justify-between gap-2">

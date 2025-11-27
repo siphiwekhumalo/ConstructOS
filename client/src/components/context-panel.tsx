@@ -57,7 +57,7 @@ export function ContextPanel({ accountId, className }: ContextPanelProps) {
 
   if (isLoading) {
     return (
-      <Card className={cn("border-white/5", className)}>
+      <Card className={cn("border-border", className)}>
         <CardContent className="p-6 flex items-center justify-center">
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </CardContent>
@@ -67,7 +67,7 @@ export function ContextPanel({ accountId, className }: ContextPanelProps) {
 
   if (error) {
     return (
-      <Card className={cn("border-white/5", className)}>
+      <Card className={cn("border-border", className)}>
         <CardContent className="p-6 text-center text-muted-foreground">
           <AlertCircle className="h-6 w-6 mx-auto mb-2" />
           <div className="text-sm">Failed to load related data</div>
@@ -80,7 +80,7 @@ export function ContextPanel({ accountId, className }: ContextPanelProps) {
 
   return (
     <div className={cn("space-y-4", className)}>
-      <Card className="border-white/5">
+      <Card className="border-border">
         <CardHeader className="pb-3">
           <CardTitle className="text-sm font-medium flex items-center justify-between">
             <span className="flex items-center gap-2">
@@ -105,7 +105,7 @@ export function ContextPanel({ accountId, className }: ContextPanelProps) {
                   href={`/dashboard/support?ticket=${ticket.id}`}
                 >
                   <div 
-                    className="p-3 rounded-sm bg-white/[0.02] hover:bg-white/5 cursor-pointer transition-colors group"
+                    className="p-3 rounded-sm bg-secondary/30 hover:bg-secondary cursor-pointer transition-colors group"
                     data-testid={`context-ticket-${ticket.id}`}
                   >
                     <div className="flex items-start justify-between gap-2">
@@ -135,7 +135,7 @@ export function ContextPanel({ accountId, className }: ContextPanelProps) {
         </CardContent>
       </Card>
 
-      <Card className="border-white/5">
+      <Card className="border-border">
         <CardHeader className="pb-3">
           <CardTitle className="text-sm font-medium flex items-center justify-between">
             <span className="flex items-center gap-2">
@@ -160,7 +160,7 @@ export function ContextPanel({ accountId, className }: ContextPanelProps) {
                   href={`/dashboard/finance?invoice=${invoice.id}`}
                 >
                   <div 
-                    className="p-3 rounded-sm bg-white/[0.02] hover:bg-white/5 cursor-pointer transition-colors group"
+                    className="p-3 rounded-sm bg-secondary/30 hover:bg-secondary cursor-pointer transition-colors group"
                     data-testid={`context-invoice-${invoice.id}`}
                   >
                     <div className="flex items-center justify-between gap-2">
@@ -199,7 +199,7 @@ export function ContextPanel({ accountId, className }: ContextPanelProps) {
         </CardContent>
       </Card>
 
-      <Card className="border-white/5">
+      <Card className="border-border">
         <CardHeader className="pb-3">
           <CardTitle className="text-sm font-medium flex items-center justify-between">
             <span className="flex items-center gap-2">
@@ -224,7 +224,7 @@ export function ContextPanel({ accountId, className }: ContextPanelProps) {
                   href={`/dashboard/crm?contact=${contact.id}`}
                 >
                   <div 
-                    className="p-3 rounded-sm bg-white/[0.02] hover:bg-white/5 cursor-pointer transition-colors group"
+                    className="p-3 rounded-sm bg-secondary/30 hover:bg-secondary cursor-pointer transition-colors group"
                     data-testid={`context-contact-${contact.id}`}
                   >
                     <div className="flex items-center justify-between gap-2">

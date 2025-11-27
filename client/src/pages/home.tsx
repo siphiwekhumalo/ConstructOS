@@ -17,7 +17,7 @@ export default function Home() {
         <CTASection />
       </main>
       
-      <footer className="py-12 border-t border-white/5 bg-card">
+      <footer className="py-12 border-t border-border bg-card">
         <div className="container mx-auto px-6 text-center text-muted-foreground text-sm">
           <div className="flex justify-center items-center gap-2 mb-4">
             <div className="h-4 w-4 bg-primary rounded-sm" />

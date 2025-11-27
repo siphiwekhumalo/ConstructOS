@@ -36,10 +36,10 @@ function SearchResultItem({ result, onClick }: { result: SearchResult; onClick: 
   return (
     <Link href={link} onClick={onClick}>
       <div 
-        className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 cursor-pointer transition-colors"
+        className="flex items-center gap-3 px-4 py-3 hover:bg-secondary cursor-pointer transition-colors"
         data-testid={`search-result-${result.type}-${result.id}`}
       >
-        <div className={cn("p-2 rounded-sm bg-white/5", colorClass)}>
+        <div className={cn("p-2 rounded-sm bg-secondary", colorClass)}>
           <Icon className="h-4 w-4" />
         </div>
         <div className="flex-1 min-w-0">
@@ -66,8 +66,8 @@ function SearchResultGroup({
   if (results.length === 0) return null;
 
   return (
-    <div className="border-b border-white/5 last:border-0">
-      <div className="px-4 py-2 text-xs font-medium text-muted-foreground uppercase tracking-wider bg-white/[0.02]">
+    <div className="border-b border-border last:border-0">
+      <div className="px-4 py-2 text-xs font-medium text-muted-foreground uppercase tracking-wider bg-secondary/50">
         {title} ({results.length})
       </div>
       {results.map((result) => (
@@ -132,7 +132,7 @@ export function GlobalSearch() {
           value={query}
           onChange={(e) => handleSearch(e.target.value)}
           onFocus={openResults}
-          className="pl-10 pr-20 bg-white/5 border-white/10 focus:border-primary/50 h-10"
+          className="pl-10 pr-20 bg-secondary/50 border-border focus:border-primary/50 h-10"
           data-testid="global-search-input"
         />
         <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
@@ -148,7 +148,7 @@ export function GlobalSearch() {
               <X className="h-3 w-3" />
             </Button>
           )}
-          <kbd className="hidden sm:inline-flex h-5 select-none items-center gap-1 rounded border border-white/10 bg-white/5 px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
+          <kbd className="hidden sm:inline-flex h-5 select-none items-center gap-1 rounded border border-border bg-secondary px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
             <span className="text-xs">⌘</span>K
           </kbd>
         </div>
@@ -156,7 +156,7 @@ export function GlobalSearch() {
 
       {isOpen && query.length >= 2 && (
         <div 
-          className="absolute top-full left-0 right-0 mt-2 bg-card border border-white/10 rounded-sm shadow-xl max-h-[400px] overflow-auto z-50"
+          className="absolute top-full left-0 right-0 mt-2 bg-card border border-border rounded-sm shadow-xl max-h-[400px] overflow-auto z-50"
           data-testid="search-results-dropdown"
         >
           {isLoading && !hasResults && (

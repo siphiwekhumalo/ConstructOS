@@ -4,7 +4,7 @@ import { ArrowRight } from "lucide-react";
 
 export function CTASection() {
   return (
-    <section className="py-24 relative overflow-hidden border-t border-white/5 bg-primary/5">
+    <section className="py-24 relative overflow-hidden border-t border-border bg-primary/5">
       <div className="container mx-auto px-6 text-center relative z-10">
         <h2 className="text-4xl md:text-5xl font-bold mb-6">Ready to Modernize Your Workflow?</h2>
         <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-10">
@@ -16,7 +16,7 @@ export function CTASection() {
               SCHEDULE A DEMO <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
           </Link>
-          <Button variant="outline" size="lg" className="rounded-none h-14 px-8 text-lg font-mono border-white/10 hover:bg-white/5">
+          <Button variant="outline" size="lg" className="rounded-none h-14 px-8 text-lg font-mono border-border hover:bg-secondary">
             CONTACT SALES
           </Button>
         </div>

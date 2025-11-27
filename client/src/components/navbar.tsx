@@ -1,10 +1,11 @@
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Menu } from "lucide-react";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export function Navbar() {
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 border-b border-white/5 bg-background/80 backdrop-blur-md">
+    <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-background/80 backdrop-blur-md">
       <div className="container mx-auto px-6 h-16 flex items-center justify-between">
         <Link href="/">
           <div className="flex items-center gap-2 cursor-pointer">
@@ -17,6 +18,7 @@ export function Navbar() {
           <a href="#features" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Solutions</a>
           <a href="#platform" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Platform</a>
           <a href="#niche" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Specialized Apps</a>
+          <ThemeToggle />
           <Link href="/dashboard">
             <Button size="sm" className="rounded-none font-mono text-xs">
               GET STARTED
@@ -24,7 +26,8 @@ export function Navbar() {
           </Link>
         </div>
 
-        <div className="md:hidden">
+        <div className="md:hidden flex items-center gap-2">
+          <ThemeToggle />
           <Button variant="ghost" size="icon">
             <Menu className="h-5 w-5" />
           </Button>

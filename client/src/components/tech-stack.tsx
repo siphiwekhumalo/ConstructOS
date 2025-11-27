@@ -31,7 +31,7 @@ const techFeatures = [
 
 export function TechStack() {
   return (
-    <section id="platform" className="py-24 bg-secondary/30 border-y border-white/5">
+    <section id="platform" className="py-24 bg-secondary/30 border-y border-border">
       <div className="container mx-auto px-6">
         <div className="grid lg:grid-cols-2 gap-16 items-center">
           <div>
@@ -55,12 +55,12 @@ export function TechStack() {
             </div>
           </div>
 
-          <div className="bg-card rounded-lg border border-white/10 p-6 shadow-2xl font-mono text-sm relative overflow-hidden">
+          <div className="bg-card rounded-lg border border-border p-6 shadow-2xl font-mono text-sm relative overflow-hidden">
              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-transparent" />
              
              {/* Mock Code Block */}
              <div className="space-y-2 text-muted-foreground">
-               <div className="flex gap-4 border-b border-white/5 pb-4 mb-4">
+               <div className="flex gap-4 border-b border-border pb-4 mb-4">
                  <div className="w-3 h-3 rounded-full bg-red-500/20" />
                  <div className="w-3 h-3 rounded-full bg-yellow-500/20" />
                  <div className="w-3 h-3 rounded-full bg-green-500/20" />

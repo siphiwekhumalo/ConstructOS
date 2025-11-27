@@ -51,13 +51,13 @@ export function FeaturesNiche() {
           {nicheApps.map((app, index) => (
             <div key={index} className="flex gap-4 group">
               <div className="flex-shrink-0 mt-1">
-                <div className="h-10 w-10 bg-secondary rounded-sm flex items-center justify-center border border-white/10 group-hover:border-primary/50 transition-colors">
+                <div className="h-10 w-10 bg-secondary rounded-sm flex items-center justify-center border border-border group-hover:border-primary/50 transition-colors">
                   <app.icon className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
                 </div>
               </div>
               <div>
                 <h3 className="font-display font-bold text-lg mb-2 group-hover:text-primary transition-colors">{app.title}</h3>
-                <p className="text-muted-foreground text-sm leading-relaxed border-l border-white/10 pl-4">
+                <p className="text-muted-foreground text-sm leading-relaxed border-l border-border pl-4">
                   {app.description}
                 </p>
               </div>

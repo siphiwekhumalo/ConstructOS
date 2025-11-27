@@ -89,8 +89,34 @@
   --chart-5: 222 47% 11%;
 }
 
+.light {
+  --background: 210 40% 98%;
+  --foreground: 222 47% 11%;
+  --card: 0 0% 100%;
+  --card-foreground: 222 47% 11%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222 47% 11%;
+  --primary: 24 95% 53%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 214 32% 91%;
+  --secondary-foreground: 222 47% 11%;
+  --muted: 214 32% 91%;
+  --muted-foreground: 215 16% 47%;
+  --accent: 214 32% 91%;
+  --accent-foreground: 222 47% 11%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 214 32% 85%;
+  --input: 214 32% 85%;
+  --ring: 24 95% 53%;
+  --chart-1: 24 95% 53%;
+  --chart-2: 222 47% 11%;
+  --chart-3: 214 32% 91%;
+  --chart-4: 215 16% 47%;
+  --chart-5: 210 40% 98%;
+}
+
 .dark {
-  /* Inherit root because we are defaulting to dark mode for this aesthetic */
   --background: 222 47% 11%;
   --foreground: 210 40% 98%;
   --card: 222 47% 14%;
@@ -138,4 +164,49 @@
                       linear-gradient(to bottom, hsl(var(--border) / 0.1) 1px, transparent 1px);
     background-size: 40px 40px;
   }
+
+  .glass {
+    @apply bg-card/80 backdrop-blur-xl border border-border;
+  }
+
+  .glass-light {
+    @apply bg-card/80 backdrop-blur-xl border border-border;
+  }
+
+  .glow {
+    box-shadow: 0 0 20px hsl(var(--primary) / 0.3), 0 0 40px hsl(var(--primary) / 0.1);
+  }
+
+  .glow-sm {
+    box-shadow: 0 0 10px hsl(var(--primary) / 0.2);
+  }
+
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  .animate-pulse-glow {
+    animation: pulse-glow 2s ease-in-out infinite;
+  }
+
+  .animate-gradient {
+    background-size: 200% 200%;
+    animation: gradient-shift 8s ease infinite;
+  }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 10px hsl(var(--primary) / 0.2); }
+  50% { box-shadow: 0 0 25px hsl(var(--primary) / 0.4); }
+}
+
+@keyframes gradient-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
