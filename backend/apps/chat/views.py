@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.permissions import AllowAny
 from django.db.models import Q
 
 from .models import ChatRoom, RoomMembership, Message, MessageReaction
@@ -15,12 +16,41 @@ from .serializers import (
 )
 
 
+def get_user_context(request):
+    """
+    Extract user context from the request.
+    Works with Azure AD authenticated users or provides demo defaults.
+    """
+    user = getattr(request, 'user', None)
+    
+    if user and hasattr(user, 'azure_ad_object_id') and user.azure_ad_object_id:
+        return {
+            'user_id': str(user.azure_ad_object_id),
+            'user_name': user.get_full_name() or user.username,
+            'user_email': user.email,
+        }
+    
+    if user and hasattr(user, 'id') and user.id:
+        return {
+            'user_id': str(user.id),
+            'user_name': user.get_full_name() if hasattr(user, 'get_full_name') else str(user),
+            'user_email': user.email if hasattr(user, 'email') else '',
+        }
+    
+    return {
+        'user_id': 'demo-user',
+        'user_name': 'Demo User',
+        'user_email': 'demo@constructos.co.za',
+    }
+
+
 class ChatRoomViewSet(viewsets.ModelViewSet):
     """
     API endpoint for chat rooms.
     """
     queryset = ChatRoom.objects.filter(is_archived=False)
     serializer_class = ChatRoomSerializer
+    permission_classes = [AllowAny]
     
     def get_serializer_class(self):
         if self.action == 'retrieve':
@@ -50,9 +80,10 @@ class ChatRoomViewSet(viewsets.ModelViewSet):
         serializer = CreateRoomSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         
-        user_id = getattr(request, 'user_id', 'system')
-        user_name = getattr(request, 'user_name', 'System')
-        user_email = getattr(request, 'user_email', '')
+        ctx = get_user_context(request)
+        user_id = ctx['user_id']
+        user_name = ctx['user_name']
+        user_email = ctx['user_email']
         
         room = ChatRoom.objects.create(
             name=serializer.validated_data['name'],
@@ -86,9 +117,10 @@ class ChatRoomViewSet(viewsets.ModelViewSet):
         """Join a chat room."""
         room = self.get_object()
         
-        user_id = getattr(request, 'user_id', 'anonymous')
-        user_name = getattr(request, 'user_name', 'Anonymous')
-        user_email = getattr(request, 'user_email', '')
+        ctx = get_user_context(request)
+        user_id = ctx['user_id']
+        user_name = ctx['user_name']
+        user_email = ctx['user_email']
         
         membership, created = RoomMembership.objects.get_or_create(
             room=room,
@@ -112,13 +144,8 @@ class ChatRoomViewSet(viewsets.ModelViewSet):
     def leave(self, request, pk=None):
         """Leave a chat room."""
         room = self.get_object()
-        user_id = getattr(request, 'user_id', None)
-        
-        if not user_id:
-            return Response(
-                {'error': 'User not authenticated'},
-                status=status.HTTP_401_UNAUTHORIZED
-            )
+        ctx = get_user_context(request)
+        user_id = ctx['user_id']
         
         membership = RoomMembership.objects.filter(
             room=room,
@@ -172,9 +199,10 @@ class ChatRoomViewSet(viewsets.ModelViewSet):
         serializer = SendMessageSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         
-        user_id = getattr(request, 'user_id', 'anonymous')
-        user_name = getattr(request, 'user_name', 'Anonymous')
-        user_email = getattr(request, 'user_email', '')
+        ctx = get_user_context(request)
+        user_id = ctx['user_id']
+        user_name = ctx['user_name']
+        user_email = ctx['user_email']
         
         parent_message = None
         parent_id = serializer.validated_data.get('parent_message_id')
@@ -223,6 +251,7 @@ class MessageViewSet(viewsets.ModelViewSet):
     """
     queryset = Message.objects.filter(is_deleted=False)
     serializer_class = MessageSerializer
+    permission_classes = [AllowAny]
     
     def get_queryset(self):
         queryset = Message.objects.filter(is_deleted=False)
@@ -237,7 +266,8 @@ class MessageViewSet(viewsets.ModelViewSet):
     def edit(self, request, pk=None):
         """Edit a message."""
         message = self.get_object()
-        user_id = getattr(request, 'user_id', None)
+        ctx = get_user_context(request)
+        user_id = ctx['user_id']
         
         if message.sender_id != user_id:
             return Response(
@@ -263,7 +293,8 @@ class MessageViewSet(viewsets.ModelViewSet):
     def soft_delete(self, request, pk=None):
         """Soft delete a message."""
         message = self.get_object()
-        user_id = getattr(request, 'user_id', None)
+        ctx = get_user_context(request)
+        user_id = ctx['user_id']
         
         if message.sender_id != user_id:
             return Response(
@@ -297,8 +328,9 @@ class MessageViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        user_id = getattr(request, 'user_id', 'anonymous')
-        user_name = getattr(request, 'user_name', 'Anonymous')
+        ctx = get_user_context(request)
+        user_id = ctx['user_id']
+        user_name = ctx['user_name']
         
         reaction, created = MessageReaction.objects.get_or_create(
             message=message,

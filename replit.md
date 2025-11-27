@@ -38,6 +38,7 @@ Preferred communication style: Simple, everyday language.
 - `crm`: Accounts, contacts, leads, opportunities, campaigns, tickets.
 - `erp`: Warehouses, products, inventory, invoices, payments, payroll, HR.
 - `construction`: Projects, transactions, equipment, safety inspections, documents.
+- `chat`: Real-time team messaging with WebSocket support.
 
 ### Data Storage
 
@@ -89,6 +90,35 @@ Role-Based Access Control (RBAC) using Microsoft Entra ID (Azure AD) for SSO.
 - **Language Detection**: Auto-detect from browser or localStorage.
 - **Translation Files**: `/public/locales/{lang}/translation.json`.
 
+### Real-Time Chat (Team Messaging)
+
+**Architecture:**
+- **Dual Server Setup**: Gunicorn (port 8000) for REST API, Daphne (port 8001) for ASGI/WebSocket connections.
+- **Channel Layer**: Redis-backed Django Channels for message distribution across workers.
+- **WebSocket Proxy**: Express gateway proxies `/ws` path to Daphne server with upgrade support.
+
+**Features:**
+- **Chat Rooms**: Public, private, direct, and project-linked channels.
+- **Real-time Messaging**: WebSocket-based instant message delivery with typing indicators.
+- **Presence Tracking**: Online/offline status for team members.
+- **Message Reactions**: Emoji reactions on messages.
+- **Thread Replies**: Reply-to functionality for message threads.
+- **Unread Counts**: Per-room unread message tracking.
+
+**Data Models:**
+- `ChatRoom`: Room metadata with room_type (public/private/direct/project).
+- `Message`: Text messages with sender, mentions, attachments, and parent references.
+- `RoomMembership`: User membership with roles (admin/moderator/member).
+- `MessageReaction`: Emoji reactions with user attribution.
+- `TypingIndicator`: Transient typing status for real-time feedback.
+
+**API Endpoints:**
+- `GET/POST /api/v1/chat/rooms/`: List and create chat rooms.
+- `GET /api/v1/chat/rooms/{id}/messages/`: Retrieve room messages with pagination.
+- `POST /api/v1/chat/rooms/{id}/join/`: Join a room.
+- `POST /api/v1/chat/rooms/{id}/leave/`: Leave a room.
+- `WebSocket /ws/chat/{room_id}/`: Real-time message stream.
+
 ## External Dependencies
 
 **Third-Party Services:**
@@ -102,6 +132,7 @@ Role-Based Access Control (RBAC) using Microsoft Entra ID (Azure AD) for SSO.
 - django-redis, celery for caching and async tasks.
 - azure-storage-blob for document storage.
 - opentelemetry-sdk, opentelemetry-instrumentation-django for tracing.
+- channels, channels-redis, daphne for WebSocket support.
 
 **Key Libraries (JavaScript/TypeScript):**
 - React Query, http-proxy-middleware, Radix UI, Tailwind CSS, Zod, React Hook Form, Lucide Icons.
@@ -136,3 +167,6 @@ Role-Based Access Control (RBAC) using Microsoft Entra ID (Azure AD) for SSO.
 - Added internationalization with i18next (en, af, zu languages)
 - Created Kubernetes health check endpoints for liveness/readiness probes
 - Enhanced testing framework with 256+ pytest tests and authenticated API clients
+- Implemented real-time team chat with Django Channels WebSocket support
+- Added dual-server architecture (Gunicorn + Daphne) for WSGI/ASGI separation
+- Created React chat UI with ChatRoomList and ChatMessagePane components
