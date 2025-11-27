@@ -2,17 +2,49 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.permissions import AllowAny
 from django.db.models import Q
 from .models import User, Event, AuditLog, Favorite
 from .serializers import UserSerializer, UserCreateSerializer, EventSerializer, AuditLogSerializer, FavoriteSerializer
-from .permissions import IsAuthenticated, IsAdmin, IsFinanceUser, IsHRManager
+from .permissions import IsAuthenticated, IsSystemAdmin, IsFinanceManager, IsHRSpecialist, get_user_permissions
 
 
 class AuthMeView(APIView):
     """
     Return the current authenticated user's profile, roles, and permissions.
+    Works with both Azure AD auth and session-based auth.
     """
+    permission_classes = [AllowAny]
+    
     def get(self, request):
+        user_id = request.session.get('user_id')
+        
+        if user_id:
+            try:
+                user = User.objects.get(id=user_id)
+                if user.is_active:
+                    permissions = get_user_permissions(user)
+                    return Response({
+                        'user': {
+                            'id': str(user.id),
+                            'username': user.username,
+                            'email': user.email,
+                            'first_name': user.first_name,
+                            'last_name': user.last_name,
+                            'full_name': user.get_full_name(),
+                            'role': user.role,
+                            'role_display': user.get_role_display(),
+                            'user_type': user.user_type,
+                            'department': user.department,
+                            'is_admin': user.is_admin,
+                            'is_executive': user.is_executive,
+                            'is_internal': user.is_internal,
+                        },
+                        'permissions': permissions,
+                    })
+            except User.DoesNotExist:
+                request.session.flush()
+        
         user = getattr(request, 'user', None)
         
         if not user or not hasattr(user, 'id') or not isinstance(user, User):
@@ -24,45 +56,29 @@ class AuthMeView(APIView):
                 'permissions': []
             })
         
-        permission_map = {
-            'admin': ['all'],
-            'Administrator': ['all'],
-            'executive': ['read_all', 'reports', 'analytics'],
-            'Executive': ['read_all', 'reports', 'analytics'],
-            'finance': ['invoices', 'payments', 'budgets', 'financial_reports'],
-            'Finance_User': ['invoices', 'payments', 'budgets', 'financial_reports'],
-            'hr': ['employees', 'payroll', 'hr_records'],
-            'HR_Manager': ['employees', 'payroll', 'hr_records'],
-            'operations': ['inventory', 'warehouses', 'equipment', 'orders'],
-            'Operations_Specialist': ['inventory', 'warehouses', 'equipment', 'orders'],
-            'site_manager': ['projects', 'safety', 'site_equipment', 'site_documents'],
-            'Site_Manager': ['projects', 'safety', 'site_equipment', 'site_documents'],
-        }
-        
-        permissions = set()
-        user_roles = getattr(user, 'roles', [user.role]) if hasattr(user, 'role') else []
-        for role in user_roles:
-            role_perms = permission_map.get(role, [])
-            permissions.update(role_perms)
-        
+        permissions = get_user_permissions(user)
         azure_ad_roles = getattr(user, 'azure_ad_roles', []) or []
         
         return Response({
             'authenticated': True,
             'user': {
-                'id': user.id,
+                'id': str(user.id),
                 'username': user.username,
                 'email': user.email,
                 'first_name': user.first_name,
                 'last_name': user.last_name,
-                'full_name': f"{user.first_name or ''} {user.last_name or ''}".strip(),
+                'full_name': user.get_full_name(),
                 'role': user.role,
+                'role_display': user.get_role_display(),
+                'user_type': getattr(user, 'user_type', 'internal'),
                 'department': user.department,
-                'is_active': user.is_active,
+                'is_admin': user.is_admin,
+                'is_executive': user.is_executive,
+                'is_internal': getattr(user, 'is_internal', True),
             },
-            'roles': user_roles,
+            'roles': [user.role],
             'azure_ad_roles': azure_ad_roles,
-            'permissions': list(permissions),
+            'permissions': permissions,
         })
 
 
