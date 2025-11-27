@@ -23,6 +23,8 @@ jobs:
         pip install -r services/identity/requirements.txt
         pip install -r services/ai/requirements.txt
     - name: 🏃 Run Unit and Integration Tests (Pytest)
+      env:
+        DJANGO_SETTINGS_MODULE: backend.settings
       run: |
         pytest backend/tests/ --cov=backend/ --junitxml=reports/python-test-results.xml
 
