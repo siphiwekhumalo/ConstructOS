@@ -67,22 +67,72 @@ Role-Based Access Control (RBAC) using Microsoft Entra ID (Azure AD) for SSO.
 - **Entity Autocomplete**: Provides real-time lookups (e.g., account details, product stock).
 - **Breadcrumb Navigation**: Automatic generation from route.
 
+### Global Scalability Features
+
+**Caching & Performance:**
+- **Redis Caching**: Distributed cache for sessions, user roles, and frequently accessed data with django-redis.
+- **Celery Task Queue**: Async task processing with Redis broker for report generation, notifications, and data sync.
+- **Cache Decorators**: `@cached()` decorator for API views with configurable TTL.
+
+**Document Management:**
+- **Azure Blob Storage**: Enterprise document storage with SAS token authentication.
+- **Document Upload API**: `/api/v1/documents/upload/` for multipart file uploads.
+- **Secure Downloads**: Time-limited SAS URLs for document access.
+
+**Observability:**
+- **OpenTelemetry**: Distributed tracing with OTLP export for cross-service monitoring.
+- **Traced Decorators**: `@traced()` decorator for automatic span creation.
+- **Health Checks**: Kubernetes readiness (`/api/v1/health/readiness/`) and liveness (`/api/v1/health/liveness/`) probes.
+
+**Internationalization:**
+- **i18next**: Multi-language support with English, Afrikaans (af), and isiZulu (zu).
+- **Language Detection**: Auto-detect from browser or localStorage.
+- **Translation Files**: `/public/locales/{lang}/translation.json`.
+
 ## External Dependencies
 
 **Third-Party Services:**
 - **PostgreSQL Database**
 - **Microsoft Entra ID (Azure AD)** for authentication.
+- **Redis** for caching and Celery message broker.
+- **Azure Blob Storage** for document management.
 
 **Key Libraries (Python):**
 - Django, Django REST Framework, django-cors-headers, django-filter, psycopg2-binary, whitenoise.
+- django-redis, celery for caching and async tasks.
+- azure-storage-blob for document storage.
+- opentelemetry-sdk, opentelemetry-instrumentation-django for tracing.
 
 **Key Libraries (JavaScript/TypeScript):**
 - React Query, http-proxy-middleware, Radix UI, Tailwind CSS, Zod, React Hook Form, Lucide Icons.
+- i18next, react-i18next, i18next-browser-languagedetector for internationalization.
 
 **Development Tools:**
 - TypeScript, Vite, ESBuild.
+- pytest, pytest-django, pytest-cov for testing.
 
 **Build & Deployment:**
 - Utilizes Azure Pipelines for CI/CD to Azure Kubernetes Service (AKS).
 - Docker for containerization, with multi-stage builds.
 - Kubernetes manifests for deployment, scaling, and configuration.
+- Nginx ingress with TLS termination.
+
+## Environment Variables
+
+**Required for Production:**
+- `DATABASE_URL`: PostgreSQL connection string
+- `REDIS_URL`: Redis connection string (default: redis://localhost:6379/0)
+- `AZURE_STORAGE_CONNECTION_STRING` or `AZURE_STORAGE_ACCOUNT` + `AZURE_STORAGE_KEY`: Azure Blob Storage credentials
+- `AZURE_STORAGE_CONTAINER`: Document container name (default: constructos-documents)
+- `OTEL_ENABLED`: Enable OpenTelemetry tracing (true/false)
+- `OTEL_EXPORTER_OTLP_ENDPOINT`: OTLP collector endpoint
+
+## Recent Changes (November 2025)
+
+- Added Redis distributed caching layer with django-redis
+- Implemented Celery for async task processing
+- Added Azure Blob Storage integration for document management
+- Integrated OpenTelemetry for distributed tracing
+- Added internationalization with i18next (en, af, zu languages)
+- Created Kubernetes health check endpoints for liveness/readiness probes
+- Enhanced testing framework with 256+ pytest tests and authenticated API clients
