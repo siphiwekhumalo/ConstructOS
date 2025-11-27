@@ -312,15 +312,18 @@ export default function DashboardHR() {
                   ) : filteredEmployees.length === 0 ? (
                     <div className="p-8 text-center text-muted-foreground">No employees found</div>
                   ) : (
-                    filteredEmployees.map((employee) => (
+                    filteredEmployees.map((employee) => {
+                      const firstName = (employee as any).first_name || employee.firstName || '';
+                      const lastName = (employee as any).last_name || employee.lastName || '';
+                      return (
                       <div key={employee.id} className="flex items-center gap-4 p-4 hover:bg-white/5" data-testid={`employee-row-${employee.id}`}>
                         <Avatar className="h-10 w-10">
                           <AvatarFallback className="bg-primary/20 text-primary">
-                            {employee.firstName[0]}{employee.lastName[0]}
+                            {firstName[0] || '?'}{lastName[0] || '?'}
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium truncate">{employee.firstName} {employee.lastName}</p>
+                          <p className="font-medium truncate">{firstName} {lastName}</p>
                           <p className="text-sm text-muted-foreground">{employee.position || "No position"}</p>
                         </div>
                         <div className="hidden md:block text-sm text-muted-foreground">
@@ -331,7 +334,7 @@ export default function DashboardHR() {
                           {employee.status || "active"}
                         </Badge>
                       </div>
-                    ))
+                    )})
                   )}
                 </div>
               </CardContent>
