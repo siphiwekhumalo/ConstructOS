@@ -18,7 +18,6 @@ class User(models.Model):
 
     class Meta:
         db_table = 'users'
-        managed = False
 
     def __str__(self):
         return self.username
@@ -37,7 +36,6 @@ class Event(models.Model):
 
     class Meta:
         db_table = 'events'
-        managed = False
 
 
 class AuditLog(models.Model):
@@ -54,4 +52,3 @@ class AuditLog(models.Model):
 
     class Meta:
         db_table = 'audit_logs'
-        managed = False

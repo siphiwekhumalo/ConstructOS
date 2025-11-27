@@ -19,7 +19,6 @@ class Warehouse(models.Model):
 
     class Meta:
         db_table = 'warehouses'
-        managed = False
 
 
 class Product(models.Model):
@@ -40,7 +39,6 @@ class Product(models.Model):
 
     class Meta:
         db_table = 'products'
-        managed = False
 
 
 class StockItem(models.Model):
@@ -57,7 +55,6 @@ class StockItem(models.Model):
 
     class Meta:
         db_table = 'stock_items'
-        managed = False
 
 
 class Invoice(models.Model):
@@ -80,7 +77,6 @@ class Invoice(models.Model):
 
     class Meta:
         db_table = 'invoices'
-        managed = False
 
 
 class InvoiceLineItem(models.Model):
@@ -97,7 +93,6 @@ class InvoiceLineItem(models.Model):
 
     class Meta:
         db_table = 'invoice_line_items'
-        managed = False
 
 
 class Payment(models.Model):
@@ -117,7 +112,6 @@ class Payment(models.Model):
 
     class Meta:
         db_table = 'payments'
-        managed = False
 
 
 class GeneralLedgerEntry(models.Model):
@@ -137,7 +131,6 @@ class GeneralLedgerEntry(models.Model):
 
     class Meta:
         db_table = 'general_ledger_entries'
-        managed = False
 
 
 class Employee(models.Model):
@@ -166,7 +159,6 @@ class Employee(models.Model):
 
     class Meta:
         db_table = 'employees'
-        managed = False
 
 
 class PayrollRecord(models.Model):
@@ -188,7 +180,6 @@ class PayrollRecord(models.Model):
 
     class Meta:
         db_table = 'payroll_records'
-        managed = False
 
 
 class LeaveRequest(models.Model):
@@ -208,7 +199,6 @@ class LeaveRequest(models.Model):
 
     class Meta:
         db_table = 'leave_requests'
-        managed = False
 
 
 class SalesOrder(models.Model):
@@ -235,7 +225,6 @@ class SalesOrder(models.Model):
 
     class Meta:
         db_table = 'sales_orders'
-        managed = False
 
 
 class SalesOrderLineItem(models.Model):
@@ -252,7 +241,6 @@ class SalesOrderLineItem(models.Model):
 
     class Meta:
         db_table = 'sales_order_line_items'
-        managed = False
 
 
 class PurchaseOrder(models.Model):
@@ -277,7 +265,6 @@ class PurchaseOrder(models.Model):
 
     class Meta:
         db_table = 'purchase_orders'
-        managed = False
 
 
 class PurchaseOrderLineItem(models.Model):
@@ -294,4 +281,3 @@ class PurchaseOrderLineItem(models.Model):
 
     class Meta:
         db_table = 'purchase_order_line_items'
-        managed = False

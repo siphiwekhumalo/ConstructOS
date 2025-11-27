@@ -21,7 +21,6 @@ class Account(models.Model):
 
     class Meta:
         db_table = 'accounts'
-        managed = False
 
 
 class Contact(models.Model):
@@ -42,7 +41,6 @@ class Contact(models.Model):
 
     class Meta:
         db_table = 'contacts'
-        managed = False
 
 
 class Address(models.Model):
@@ -60,7 +58,6 @@ class Address(models.Model):
 
     class Meta:
         db_table = 'addresses'
-        managed = False
 
 
 class PipelineStage(models.Model):
@@ -74,7 +71,6 @@ class PipelineStage(models.Model):
 
     class Meta:
         db_table = 'pipeline_stages'
-        managed = False
 
 
 class Lead(models.Model):
@@ -99,7 +95,6 @@ class Lead(models.Model):
 
     class Meta:
         db_table = 'leads'
-        managed = False
 
 
 class Opportunity(models.Model):
@@ -121,7 +116,6 @@ class Opportunity(models.Model):
 
     class Meta:
         db_table = 'opportunities'
-        managed = False
 
 
 class Campaign(models.Model):
@@ -143,7 +137,6 @@ class Campaign(models.Model):
 
     class Meta:
         db_table = 'campaigns'
-        managed = False
 
 
 class MailingList(models.Model):
@@ -157,7 +150,6 @@ class MailingList(models.Model):
 
     class Meta:
         db_table = 'mailing_lists'
-        managed = False
 
 
 class Segment(models.Model):
@@ -172,7 +164,6 @@ class Segment(models.Model):
 
     class Meta:
         db_table = 'segments'
-        managed = False
 
 
 class Sla(models.Model):
@@ -187,7 +178,6 @@ class Sla(models.Model):
 
     class Meta:
         db_table = 'slas'
-        managed = False
 
 
 class Ticket(models.Model):
@@ -211,7 +201,6 @@ class Ticket(models.Model):
 
     class Meta:
         db_table = 'tickets'
-        managed = False
 
 
 class TicketComment(models.Model):
@@ -224,7 +213,6 @@ class TicketComment(models.Model):
 
     class Meta:
         db_table = 'ticket_comments'
-        managed = False
 
 
 class Client(models.Model):
@@ -242,4 +230,3 @@ class Client(models.Model):
 
     class Meta:
         db_table = 'clients'
-        managed = False

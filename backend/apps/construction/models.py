@@ -22,7 +22,6 @@ class Project(models.Model):
 
     class Meta:
         db_table = 'projects'
-        managed = False
 
 
 class Transaction(models.Model):
@@ -38,7 +37,6 @@ class Transaction(models.Model):
 
     class Meta:
         db_table = 'transactions'
-        managed = False
 
 
 class Equipment(models.Model):
@@ -58,7 +56,6 @@ class Equipment(models.Model):
 
     class Meta:
         db_table = 'equipment'
-        managed = False
 
 
 class SafetyInspection(models.Model):
@@ -77,7 +74,6 @@ class SafetyInspection(models.Model):
 
     class Meta:
         db_table = 'safety_inspections'
-        managed = False
 
 
 class Document(models.Model):
@@ -94,4 +90,3 @@ class Document(models.Model):
 
     class Meta:
         db_table = 'documents'
-        managed = False
