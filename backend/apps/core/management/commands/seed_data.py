@@ -31,7 +31,7 @@ from backend.apps.construction.models import (
 )
 
 SEED = 42
-fake = Faker()
+fake = Faker('en_ZA')  # South African locale
 Faker.seed(SEED)
 random.seed(SEED)
 
@@ -140,14 +140,14 @@ class Command(BaseCommand):
     def create_users(self):
         self.stdout.write('Creating users...')
         base_users = [
-            {'username': 'admin', 'email': 'admin@constructos.com', 'first_name': 'System', 'last_name': 'Administrator', 'role': 'admin', 'department': 'IT'},
-            {'username': 'jmartinez', 'email': 'j.martinez@constructos.com', 'first_name': 'James', 'last_name': 'Martinez', 'role': 'executive', 'department': 'Executive'},
-            {'username': 'schen', 'email': 's.chen@constructos.com', 'first_name': 'Sarah', 'last_name': 'Chen', 'role': 'project_manager', 'department': 'Operations'},
-            {'username': 'mwilliams', 'email': 'm.williams@constructos.com', 'first_name': 'Michael', 'last_name': 'Williams', 'role': 'project_manager', 'department': 'Operations'},
-            {'username': 'ejohnson', 'email': 'e.johnson@constructos.com', 'first_name': 'Emily', 'last_name': 'Johnson', 'role': 'finance', 'department': 'Finance'},
-            {'username': 'dbrown', 'email': 'd.brown@constructos.com', 'first_name': 'David', 'last_name': 'Brown', 'role': 'warehouse', 'department': 'Logistics'},
-            {'username': 'agarcia', 'email': 'a.garcia@constructos.com', 'first_name': 'Ana', 'last_name': 'Garcia', 'role': 'sales', 'department': 'Sales'},
-            {'username': 'rthompson', 'email': 'r.thompson@constructos.com', 'first_name': 'Robert', 'last_name': 'Thompson', 'role': 'safety', 'department': 'Safety'},
+            {'username': 'admin', 'email': 'admin@constructos.co.za', 'first_name': 'System', 'last_name': 'Administrator', 'role': 'admin', 'department': 'IT'},
+            {'username': 'tbotha', 'email': 't.botha@constructos.co.za', 'first_name': 'Thabo', 'last_name': 'Botha', 'role': 'executive', 'department': 'Executive'},
+            {'username': 'snaidoo', 'email': 's.naidoo@constructos.co.za', 'first_name': 'Sibongile', 'last_name': 'Naidoo', 'role': 'project_manager', 'department': 'Operations'},
+            {'username': 'jvandermerwe', 'email': 'j.vandermerwe@constructos.co.za', 'first_name': 'Johan', 'last_name': 'Van der Merwe', 'role': 'project_manager', 'department': 'Operations'},
+            {'username': 'lpretorius', 'email': 'l.pretorius@constructos.co.za', 'first_name': 'Lindiwe', 'last_name': 'Pretorius', 'role': 'finance', 'department': 'Finance'},
+            {'username': 'dswanepoel', 'email': 'd.swanepoel@constructos.co.za', 'first_name': 'David', 'last_name': 'Swanepoel', 'role': 'warehouse', 'department': 'Logistics'},
+            {'username': 'nmolefe', 'email': 'n.molefe@constructos.co.za', 'first_name': 'Nomvula', 'last_name': 'Molefe', 'role': 'sales', 'department': 'Sales'},
+            {'username': 'pjansen', 'email': 'p.jansen@constructos.co.za', 'first_name': 'Pieter', 'last_name': 'Jansen', 'role': 'safety', 'department': 'Safety'},
         ]
         
         users = []
@@ -170,7 +170,7 @@ class Command(BaseCommand):
             user = User.objects.create(
                 id=USER_UUIDS[idx] if idx < len(USER_UUIDS) else str(uuid.uuid4()),
                 username=f"{first[0].lower()}{last.lower()}{i}",
-                email=f"{first.lower()}.{last.lower()}{i}@constructos.com",
+                email=f"{first.lower()}.{last.lower()}{i}@constructos.co.za",
                 first_name=first,
                 last_name=last,
                 role=random.choice(roles),
@@ -218,11 +218,11 @@ class Command(BaseCommand):
                 payment_terms=random.choice(payment_terms),
                 credit_limit=Decimal(random.randint(50, 2000)) * Decimal('1000'),
                 account_number=f"ACC-{str(i+1).zfill(5)}",
-                website=f"https://www.{domain}.com",
-                phone=fake.phone_number(),
-                email=f"info@{domain}.com",
+                website=f"https://www.{domain}.co.za",
+                phone=f"+27 {random.choice(['11', '12', '21', '31', '41', '51'])} {random.randint(100, 999)} {random.randint(1000, 9999)}",
+                email=f"info@{domain}.co.za",
                 status='active',
-                currency='USD',
+                currency='ZAR',
                 owner=random.choice(users),
             )
             accounts.append(account)
@@ -252,13 +252,14 @@ class Command(BaseCommand):
             for j in range(num_contacts):
                 first = fake.first_name()
                 last = fake.last_name()
+                area_code = random.choice(['11', '12', '21', '31', '41', '51'])
                 contact = Contact.objects.create(
                     id=CONTACT_UUIDS[contact_idx] if contact_idx < len(CONTACT_UUIDS) else str(uuid.uuid4()),
                     first_name=first,
                     last_name=last,
-                    email=f"{first.lower()}.{last.lower()}{contact_idx}@{clean_domain}.com",
-                    phone=fake.phone_number(),
-                    mobile=fake.phone_number(),
+                    email=f"{first.lower()}.{last.lower()}{contact_idx}@{clean_domain}.co.za",
+                    phone=f"+27 {area_code} {random.randint(100, 999)} {random.randint(1000, 9999)}",
+                    mobile=f"+27 {random.choice(['60', '61', '62', '63', '64', '65', '66', '67', '68', '69', '71', '72', '73', '74', '76', '78', '79', '81', '82', '83', '84'])} {random.randint(100, 999)} {random.randint(1000, 9999)}",
                     title=random.choice(titles),
                     department=random.choice(departments),
                     account=account,
@@ -276,26 +277,28 @@ class Command(BaseCommand):
 
     def create_addresses(self, accounts, contacts):
         self.stdout.write('Creating addresses...')
-        cities_states = [
-            ('San Francisco', 'CA', '94102'), ('Los Angeles', 'CA', '90001'), ('San Diego', 'CA', '92101'),
-            ('Seattle', 'WA', '98101'), ('Portland', 'OR', '97201'), ('Denver', 'CO', '80202'),
-            ('Phoenix', 'AZ', '85001'), ('Las Vegas', 'NV', '89101'), ('Austin', 'TX', '78701'),
-            ('Houston', 'TX', '77001'), ('Dallas', 'TX', '75201'), ('Chicago', 'IL', '60601'),
+        cities_provinces = [
+            ('Johannesburg', 'Gauteng', '2001'), ('Pretoria', 'Gauteng', '0001'), ('Sandton', 'Gauteng', '2196'),
+            ('Cape Town', 'Western Cape', '8001'), ('Stellenbosch', 'Western Cape', '7600'), ('Paarl', 'Western Cape', '7646'),
+            ('Durban', 'KwaZulu-Natal', '4001'), ('Pietermaritzburg', 'KwaZulu-Natal', '3201'), ('Richards Bay', 'KwaZulu-Natal', '3900'),
+            ('Port Elizabeth', 'Eastern Cape', '6001'), ('East London', 'Eastern Cape', '5201'), ('Gqeberha', 'Eastern Cape', '6001'),
+            ('Bloemfontein', 'Free State', '9301'), ('Kimberley', 'Northern Cape', '8301'), ('Polokwane', 'Limpopo', '0700'),
+            ('Nelspruit', 'Mpumalanga', '1200'), ('Rustenburg', 'North West', '0299'), ('Centurion', 'Gauteng', '0157'),
         ]
-        street_names = ['Main St', 'Oak Ave', 'Industrial Blvd', 'Commerce Dr', 'Technology Way', 'Enterprise Rd', 'Corporate Pkwy', 'Business Center Dr', 'Park Ave', 'Harbor Blvd']
+        street_names = ['Main Road', 'Jan Smuts Avenue', 'Voortrekker Road', 'Church Street', 'Long Street', 'Rivonia Road', 'Oxford Road', 'Commissioner Street', 'West Street', 'Mandela Drive', 'Beyers Naude Drive', 'William Nicol Drive']
         
         addresses = []
         for account in accounts:
             for addr_type in ['billing', 'shipping']:
-                city, state, postal = random.choice(cities_states)
+                city, province, postal = random.choice(cities_provinces)
                 address = Address.objects.create(
                     id=str(uuid.uuid4()),
-                    street=f"{random.randint(100, 9999)} {random.choice(street_names)}",
-                    street2=random.choice([None, 'Suite 100', 'Floor 5', 'Building A', None, None]),
+                    street=f"{random.randint(1, 999)} {random.choice(street_names)}",
+                    street2=random.choice([None, 'Suite 100', 'Floor 5', 'Block A', None, None]),
                     city=city,
-                    state=state,
+                    state=province,
                     postal_code=postal,
-                    country='USA',
+                    country='South Africa',
                     type=addr_type,
                     is_primary=True,
                     account=account,
@@ -322,9 +325,9 @@ class Command(BaseCommand):
 
     def create_leads(self, users):
         self.stdout.write('Creating leads...')
-        companies = ['Sunrise Properties', 'Metro Construction', 'Skyline Developers', 'Urban Build Co', 'Premier Contractors', 'Innovative Structures', 'Capital Building Group', 'Landmark Construction', 'Foundation First Inc', 'BuildRight Solutions', 'Elite Development Corp', 'Progressive Builders', 'NextGen Construction', 'Apex Building Systems', 'Cornerstone Projects', 'Alliance Contractors', 'Prime Development LLC', 'Structural Excellence']
-        first_names = ['Alex', 'Jordan', 'Taylor', 'Morgan', 'Casey', 'Riley', 'Jamie', 'Cameron', 'Quinn', 'Avery', 'Blake', 'Drew', 'Parker', 'Skyler', 'Reese', 'Finley', 'Charlie', 'Hayden']
-        last_names = ['Adams', 'Baker', 'Clark', 'Davis', 'Evans', 'Foster', 'Green', 'Hall', 'Irving', 'Jones', 'King', 'Lewis', 'Morris', 'Nelson', 'Owen', 'Price', 'Quinn', 'Reed']
+        companies = ['Sandton Properties', 'Gauteng Construction', 'Cape Skyline Developers', 'Joburg Build Co', 'Pretoria Premier Contractors', 'Durban Innovative Structures', 'Highveld Building Group', 'Table Mountain Construction', 'Soweto Foundation Inc', 'Midrand BuildRight', 'Centurion Elite Developments', 'Waterfall Builders', 'NextGen SA Construction', 'Apex Building Systems SA', 'Melrose Cornerstone Projects', 'Rivonia Alliance Contractors', 'Rosebank Prime Development', 'Bryanston Structural']
+        first_names = ['Thabo', 'Sipho', 'Nomvula', 'Lindiwe', 'Pieter', 'Johan', 'Andile', 'Kagiso', 'Mpho', 'Lerato', 'Willem', 'Francois', 'Thandiwe', 'Bongani', 'Zanele', 'Mandla', 'Precious', 'Themba']
+        last_names = ['Molefe', 'Naidoo', 'Van der Merwe', 'Botha', 'Pretorius', 'Dlamini', 'Mthembu', 'Khumalo', 'Ndlovu', 'Zulu', 'Swanepoel', 'Coetzee', 'Mokoena', 'Mahlangu', 'Sithole', 'Mabaso', 'Pillay', 'Govender']
         sources = ['Website Form', 'Trade Show', 'Referral', 'LinkedIn', 'Cold Outreach', 'Industry Event', 'Partner Referral', 'Google Ads']
         statuses = ['new', 'contacted', 'qualified', 'unqualified', 'converted']
         ratings = ['Hot', 'Warm', 'Cold']
@@ -338,14 +341,14 @@ class Command(BaseCommand):
                 id=str(uuid.uuid4()),
                 first_name=first,
                 last_name=last,
-                email=f"{first.lower()}.{last.lower()}@{company.lower().replace(' ', '')}.com",
-                phone=f"+1 (555) {random.randint(100,999)}-{random.randint(1000,9999)}",
+                email=f"{first.lower()}.{last.lower()}@{company.lower().replace(' ', '')}.co.za",
+                phone=f"+27 {random.choice(['11', '12', '21', '31'])} {random.randint(100,999)} {random.randint(1000,9999)}",
                 company=company,
-                title=random.choice(['Owner', 'President', 'VP Operations', 'Director', 'Manager', 'Procurement Lead']),
+                title=random.choice(['Owner', 'Managing Director', 'VP Operations', 'Director', 'Manager', 'Procurement Lead']),
                 source=random.choice(sources),
                 status=random.choice(statuses),
                 rating=random.choice(ratings),
-                estimated_value=Decimal(random.randint(50000, 5000000)),
+                estimated_value=Decimal(random.randint(500000, 50000000)),
                 description=f"Interested in construction services for upcoming {random.choice(['commercial', 'residential', 'mixed-use', 'industrial'])} project.",
                 owner=random.choice(users),
             )
@@ -474,9 +477,9 @@ class Command(BaseCommand):
     def create_warehouses(self, users):
         self.stdout.write('Creating warehouses...')
         warehouses_data = [
-            {'name': 'Main Distribution Center', 'code': 'WH-MAIN', 'address': '1500 Industrial Parkway', 'city': 'Oakland', 'country': 'USA', 'capacity': 50000},
-            {'name': 'South Bay Storage Facility', 'code': 'WH-SBAY', 'address': '2800 Commerce Drive', 'city': 'San Jose', 'country': 'USA', 'capacity': 35000},
-            {'name': 'North Region Depot', 'code': 'WH-NORTH', 'address': '890 Warehouse Road', 'city': 'Sacramento', 'country': 'USA', 'capacity': 25000},
+            {'name': 'Johannesburg Main Distribution Centre', 'code': 'WH-JHB', 'address': '150 Industrial Road, Isando', 'city': 'Johannesburg', 'country': 'South Africa', 'capacity': 50000},
+            {'name': 'Cape Town Storage Facility', 'code': 'WH-CPT', 'address': '28 Paarden Eiland Road', 'city': 'Cape Town', 'country': 'South Africa', 'capacity': 35000},
+            {'name': 'Durban Harbour Depot', 'code': 'WH-DBN', 'address': '45 Maydon Wharf Road', 'city': 'Durban', 'country': 'South Africa', 'capacity': 25000},
         ]
         
         warehouses = []
@@ -564,40 +567,43 @@ class Command(BaseCommand):
     def create_employees(self, users):
         self.stdout.write('Creating employees...')
         employees_data = [
-            {'first_name': 'Marcus', 'last_name': 'Rodriguez', 'department': 'Operations', 'position': 'Site Superintendent', 'salary': Decimal('95000')},
-            {'first_name': 'Jennifer', 'last_name': 'Walsh', 'department': 'Finance', 'position': 'Controller', 'salary': Decimal('125000')},
-            {'first_name': 'Kevin', 'last_name': 'O\'Brien', 'department': 'Operations', 'position': 'Project Engineer', 'salary': Decimal('78000')},
-            {'first_name': 'Lisa', 'last_name': 'Nakamura', 'department': 'Safety', 'position': 'Safety Manager', 'salary': Decimal('85000')},
-            {'first_name': 'Carlos', 'last_name': 'Mendez', 'department': 'Operations', 'position': 'Crane Operator', 'salary': Decimal('72000')},
-            {'first_name': 'Amanda', 'last_name': 'Foster', 'department': 'HR', 'position': 'HR Manager', 'salary': Decimal('82000')},
-            {'first_name': 'Derek', 'last_name': 'Thompson', 'department': 'Logistics', 'position': 'Warehouse Supervisor', 'salary': Decimal('65000')},
-            {'first_name': 'Michelle', 'last_name': 'Kim', 'department': 'Engineering', 'position': 'Structural Engineer', 'salary': Decimal('98000')},
-            {'first_name': 'Brandon', 'last_name': 'Lewis', 'department': 'Operations', 'position': 'Foreman', 'salary': Decimal('68000')},
-            {'first_name': 'Nicole', 'last_name': 'Patel', 'department': 'Procurement', 'position': 'Purchasing Manager', 'salary': Decimal('75000')},
-            {'first_name': 'Ryan', 'last_name': 'Sullivan', 'department': 'Operations', 'position': 'Equipment Operator', 'salary': Decimal('58000')},
-            {'first_name': 'Stephanie', 'last_name': 'Chen', 'department': 'Quality', 'position': 'QA Inspector', 'salary': Decimal('62000')},
-            {'first_name': 'Antonio', 'last_name': 'Vasquez', 'department': 'Operations', 'position': 'Carpenter Lead', 'salary': Decimal('64000')},
-            {'first_name': 'Rachel', 'last_name': 'Morrison', 'department': 'Administration', 'position': 'Office Manager', 'salary': Decimal('55000')},
-            {'first_name': 'Tyler', 'last_name': 'Jackson', 'department': 'Operations', 'position': 'Electrician', 'salary': Decimal('72000')},
+            {'first_name': 'Thabo', 'last_name': 'Molefe', 'department': 'Operations', 'position': 'Site Superintendent', 'salary': Decimal('850000')},
+            {'first_name': 'Lindiwe', 'last_name': 'Pretorius', 'department': 'Finance', 'position': 'Controller', 'salary': Decimal('1150000')},
+            {'first_name': 'Johan', 'last_name': 'Van der Merwe', 'department': 'Operations', 'position': 'Project Engineer', 'salary': Decimal('720000')},
+            {'first_name': 'Nomvula', 'last_name': 'Khumalo', 'department': 'Safety', 'position': 'Safety Manager', 'salary': Decimal('780000')},
+            {'first_name': 'Sipho', 'last_name': 'Dlamini', 'department': 'Operations', 'position': 'Crane Operator', 'salary': Decimal('480000')},
+            {'first_name': 'Annemarie', 'last_name': 'Botha', 'department': 'HR', 'position': 'HR Manager', 'salary': Decimal('720000')},
+            {'first_name': 'Pieter', 'last_name': 'Swanepoel', 'department': 'Logistics', 'position': 'Warehouse Supervisor', 'salary': Decimal('520000')},
+            {'first_name': 'Zanele', 'last_name': 'Mthembu', 'department': 'Engineering', 'position': 'Structural Engineer', 'salary': Decimal('920000')},
+            {'first_name': 'Bongani', 'last_name': 'Ndlovu', 'department': 'Operations', 'position': 'Foreman', 'salary': Decimal('480000')},
+            {'first_name': 'Priya', 'last_name': 'Naidoo', 'department': 'Procurement', 'position': 'Purchasing Manager', 'salary': Decimal('650000')},
+            {'first_name': 'Andile', 'last_name': 'Zulu', 'department': 'Operations', 'position': 'Equipment Operator', 'salary': Decimal('420000')},
+            {'first_name': 'Mpho', 'last_name': 'Mokoena', 'department': 'Quality', 'position': 'QA Inspector', 'salary': Decimal('480000')},
+            {'first_name': 'Francois', 'last_name': 'Coetzee', 'department': 'Operations', 'position': 'Carpenter Lead', 'salary': Decimal('450000')},
+            {'first_name': 'Lerato', 'last_name': 'Sithole', 'department': 'Administration', 'position': 'Office Manager', 'salary': Decimal('420000')},
+            {'first_name': 'Willem', 'last_name': 'Jansen', 'department': 'Operations', 'position': 'Electrician', 'salary': Decimal('520000')},
         ]
         
         employees = []
+        sa_cities = ['Johannesburg', 'Pretoria', 'Sandton', 'Centurion', 'Midrand', 'Randburg', 'Roodepoort', 'Soweto']
+        sa_streets = ['Main Road', 'Jan Smuts Avenue', 'Church Street', 'Rivonia Road', 'Oxford Road', 'Mandela Drive', 'Beyers Naude Drive']
+        
         for i, data in enumerate(employees_data):
-            last_name_clean = data['last_name'].lower().replace("'", "")
+            last_name_clean = data['last_name'].lower().replace(" ", "").replace("'", "")
             emp = Employee.objects.create(
                 id=str(uuid.uuid4()),
                 employee_number=f"EMP-{str(1001 + i)}",
                 user=users[i % len(users)] if i < len(users) else None,
-                email=f"{data['first_name'].lower()}.{last_name_clean}@constructos.com",
-                phone=f"+1 (555) {random.randint(100,999)}-{random.randint(1000,9999)}",
+                email=f"{data['first_name'].lower()}.{last_name_clean}@constructos.co.za",
+                phone=f"+27 {random.choice(['11', '12', '21', '31'])} {random.randint(100,999)} {random.randint(1000,9999)}",
                 hire_date=timezone.now() - timedelta(days=random.randint(180, 1800)),
-                salary_frequency='biweekly',
+                salary_frequency='monthly',
                 status='active',
-                address=f"{random.randint(100, 9999)} {random.choice(['Oak St', 'Main Ave', 'Park Blvd', 'Cedar Ln'])}",
-                city=random.choice(['Oakland', 'San Francisco', 'Berkeley', 'Alameda']),
-                country='USA',
+                address=f"{random.randint(1, 999)} {random.choice(sa_streets)}",
+                city=random.choice(sa_cities),
+                country='South Africa',
                 emergency_contact=f"{random.choice(['Spouse', 'Parent', 'Sibling'])}",
-                emergency_phone=f"+1 (555) {random.randint(100,999)}-{random.randint(1000,9999)}",
+                emergency_phone=f"+27 {random.choice(['60', '61', '62', '71', '72', '73', '82', '83', '84'])} {random.randint(100,999)} {random.randint(1000,9999)}",
                 **data
             )
             employees.append(emp)
@@ -606,14 +612,14 @@ class Command(BaseCommand):
     def create_projects(self, accounts, users):
         self.stdout.write('Creating projects...')
         projects_data = [
-            {'name': 'Downtown Office Tower Phase 1', 'location': '450 Market Street, San Francisco, CA', 'status': 'In Progress', 'progress': 65, 'budget': Decimal('45000000'), 'description': 'Class A office tower development with 32 floors of premium office space and ground-level retail.'},
-            {'name': 'Harbor View Medical Center', 'location': '1200 Harbor Blvd, Oakland, CA', 'status': 'In Progress', 'progress': 42, 'budget': Decimal('78000000'), 'description': 'State-of-the-art medical facility with emergency department, surgical suites, and patient tower.'},
-            {'name': 'Greenfield Community Center', 'location': '5500 Greenfield Rd, Greenfield, CA', 'status': 'Planning', 'progress': 15, 'budget': Decimal('12000000'), 'description': 'Public community center with gymnasium, meeting rooms, and outdoor recreational facilities.'},
-            {'name': 'Tech Campus Building B', 'location': '2000 Innovation Way, San Jose, CA', 'status': 'In Progress', 'progress': 78, 'budget': Decimal('32000000'), 'description': 'Second phase of technology campus expansion with open floor plan and collaboration spaces.'},
-            {'name': 'Luxury Residential Complex', 'location': '800 Pacific Heights, San Francisco, CA', 'status': 'Completed', 'progress': 100, 'budget': Decimal('28000000'), 'description': 'High-end residential development with 45 luxury condominium units and premium amenities.'},
-            {'name': 'Industrial Distribution Center', 'location': '15000 Industrial Pkwy, Fremont, CA', 'status': 'In Progress', 'progress': 55, 'budget': Decimal('18000000'), 'description': 'Modern logistics facility with automated storage systems and loading dock infrastructure.'},
-            {'name': 'Airport Terminal Renovation', 'location': 'Oakland International Airport, Oakland, CA', 'status': 'On Hold', 'progress': 25, 'budget': Decimal('95000000'), 'description': 'Comprehensive terminal modernization including expanded gates and enhanced passenger experience.'},
-            {'name': 'Waterfront Hotel Development', 'location': '100 Embarcadero, San Francisco, CA', 'status': 'Planning', 'progress': 8, 'budget': Decimal('65000000'), 'description': 'Boutique hotel with 250 rooms, rooftop restaurant, and conference facilities.'},
+            {'name': 'Sandton Office Tower Phase 1', 'location': '150 Rivonia Road, Sandton, Gauteng', 'status': 'In Progress', 'progress': 65, 'budget': Decimal('450000000'), 'description': 'Class A office tower development with 32 floors of premium office space and ground-level retail in Sandton CBD.'},
+            {'name': 'Waterfall Medical Centre', 'location': '25 Waterfall Drive, Midrand, Gauteng', 'status': 'In Progress', 'progress': 42, 'budget': Decimal('780000000'), 'description': 'State-of-the-art medical facility with emergency department, surgical suites, and patient tower.'},
+            {'name': 'Soweto Community Centre', 'location': '500 Vilakazi Street, Soweto, Gauteng', 'status': 'Planning', 'progress': 15, 'budget': Decimal('120000000'), 'description': 'Public community centre with gymnasium, meeting rooms, and outdoor recreational facilities.'},
+            {'name': 'Cape Town Tech Campus Building B', 'location': '200 Techno Park Drive, Stellenbosch, Western Cape', 'status': 'In Progress', 'progress': 78, 'budget': Decimal('320000000'), 'description': 'Second phase of technology campus expansion with open floor plan and collaboration spaces.'},
+            {'name': 'Camps Bay Luxury Residences', 'location': '80 Victoria Road, Camps Bay, Cape Town', 'status': 'Completed', 'progress': 100, 'budget': Decimal('280000000'), 'description': 'High-end residential development with 45 luxury apartment units and premium amenities with ocean views.'},
+            {'name': 'Durban Logistics Hub', 'location': '15 Maydon Wharf Road, Durban, KwaZulu-Natal', 'status': 'In Progress', 'progress': 55, 'budget': Decimal('180000000'), 'description': 'Modern logistics facility with automated storage systems and loading dock infrastructure near Durban harbour.'},
+            {'name': 'OR Tambo Terminal Renovation', 'location': 'OR Tambo International Airport, Kempton Park, Gauteng', 'status': 'On Hold', 'progress': 25, 'budget': Decimal('950000000'), 'description': 'Comprehensive terminal modernization including expanded gates and enhanced passenger experience.'},
+            {'name': 'V&A Waterfront Hotel Development', 'location': '100 Dock Road, V&A Waterfront, Cape Town', 'status': 'Planning', 'progress': 8, 'budget': Decimal('650000000'), 'description': 'Boutique hotel with 250 rooms, rooftop restaurant, and conference facilities overlooking Table Mountain.'},
         ]
         
         projects = []
@@ -765,7 +771,7 @@ class Command(BaseCommand):
             {'name': 'Trencher Ditch Witch RT80', 'status': 'Active', 'serial_number': 'DW-RT80-23456', 'purchase_price': Decimal('78000')},
         ]
         
-        locations = ['Downtown SF Site', 'Oakland Medical Center', 'San Jose Tech Campus', 'Main Warehouse', 'South Bay Yard', 'North Region Depot']
+        locations = ['Sandton CBD Site', 'Waterfall Medical Centre', 'Stellenbosch Tech Campus', 'Johannesburg Main Warehouse', 'Cape Town Yard', 'Durban Harbour Depot']
         
         equipment = []
         for i, data in enumerate(equipment_data):
@@ -785,8 +791,8 @@ class Command(BaseCommand):
 
     def create_safety_inspections(self, projects):
         self.stdout.write('Creating safety inspections...')
-        inspection_types = ['Daily Walkthrough', 'Weekly Safety Audit', 'Monthly Compliance Review', 'OSHA Inspection', 'Equipment Safety Check', 'Fire Safety Inspection', 'Fall Protection Audit']
-        inspectors = ['Lisa Nakamura', 'Robert Thompson', 'Maria Santos', 'Kevin Walsh', 'Diana Patel']
+        inspection_types = ['Daily Walkthrough', 'Weekly Safety Audit', 'Monthly Compliance Review', 'DoL Inspection', 'Equipment Safety Check', 'Fire Safety Inspection', 'Fall Protection Audit']
+        inspectors = ['Nomvula Khumalo', 'Pieter Jansen', 'Zanele Mthembu', 'Johan Botha', 'Priya Naidoo']
         
         findings_examples = [
             'All safety equipment in compliance',
@@ -834,7 +840,7 @@ class Command(BaseCommand):
         self.stdout.write('Creating documents...')
         doc_types = ['Contract', 'Drawing', 'Specification', 'RFI', 'Submittal', 'Change Order', 'Meeting Minutes', 'Permit', 'Insurance Certificate', 'Inspection Report']
         categories = ['Legal', 'Engineering', 'Architecture', 'Permits & Approvals', 'Submittals', 'Correspondence', 'Financial', 'Safety']
-        authors = ['James Martinez', 'Sarah Chen', 'Michael Williams', 'Emily Johnson', 'David Brown']
+        authors = ['Thabo Botha', 'Sibongile Naidoo', 'Johan Van der Merwe', 'Lindiwe Pretorius', 'David Swanepoel']
         
         documents = []
         for project in projects:
