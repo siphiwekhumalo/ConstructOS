@@ -184,6 +184,47 @@ The Account model includes fields for both CRM and ERP integration:
 
 Currently implements basic user schema with username/password fields. Django REST Framework provides token authentication capabilities.
 
+## Navigation and Interface Features
+
+### Unified Global Search
+- **Endpoint**: `/api/v1/search/?q={query}&limit={limit}`
+- Searches across Contacts, Products, SalesOrders, and Tickets
+- Results grouped by entity type with instant display
+- Frontend component with keyboard shortcut (Cmd+K)
+
+### Contextual Side Panel
+- **Endpoint**: `/api/v1/accounts/{id}/related/`
+- Shows related data when viewing an account:
+  - Open tickets with status and priority
+  - Recent invoices with amounts and due dates
+  - Associated contacts with primary indicator
+- Click any item to navigate to full record
+
+### Smart Action Buttons
+- Buttons that change based on record status
+- Quote flow: "Edit Quote" → "Convert to Order" → "View Sales Order"
+- Ticket flow: "Start Working" → "Resolve Ticket" → "Close Ticket"
+- Configurable action mapping per entity type
+
+### Favorites System
+- **Endpoint**: `/api/v1/favorites/`
+- Save frequently accessed records for quick access
+- Toggle favorites via star icon in navigation
+- Persists across sessions per user
+
+### Entity Autocomplete
+- **Account Lookup**: `/api/v1/accounts/lookup/?term={term}`
+  - Returns billing address and payment terms
+  - Used in order/invoice forms
+- **Product Lookup**: `/api/v1/products/lookup/?term={term}`
+  - Returns real-time stock availability
+  - Shows in_stock/low_stock/out_of_stock status
+
+### Breadcrumb Navigation
+- Automatic breadcrumb generation from route
+- Configurable labels per route segment
+- Integration with favorites toggle
+
 ### External Dependencies
 
 **Third-Party Services:**

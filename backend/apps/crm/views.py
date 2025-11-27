@@ -19,6 +19,100 @@ class AccountViewSet(viewsets.ModelViewSet):
     filterset_fields = ['status', 'type', 'industry']
     search_fields = ['name', 'email']
 
+    @action(detail=True, methods=['get'])
+    def related(self, request, pk=None):
+        """
+        Get related data for an account - tickets and invoices.
+        Used for the contextual side panel.
+        """
+        account = self.get_object()
+        
+        open_tickets = Ticket.objects.filter(
+            account=account,
+            status__in=['open', 'in_progress', 'pending']
+        ).order_by('-created_at')[:5]
+        
+        tickets_data = [{
+            'id': t.id,
+            'ticket_number': t.ticket_number,
+            'subject': t.subject,
+            'status': t.status,
+            'priority': t.priority,
+            'created_at': t.created_at.isoformat(),
+        } for t in open_tickets]
+        
+        from backend.apps.erp.models import Invoice
+        recent_invoices = Invoice.objects.filter(
+            account=account
+        ).order_by('-created_at')[:5]
+        
+        invoices_data = [{
+            'id': i.id,
+            'invoice_number': i.invoice_number,
+            'status': i.status,
+            'total_amount': str(i.total_amount),
+            'due_date': i.due_date.isoformat() if i.due_date else None,
+            'created_at': i.created_at.isoformat(),
+        } for i in recent_invoices]
+        
+        contacts = Contact.objects.filter(account=account).order_by('-is_primary', 'last_name')[:5]
+        contacts_data = [{
+            'id': c.id,
+            'name': f"{c.first_name} {c.last_name}",
+            'email': c.email,
+            'title': c.title,
+            'is_primary': c.is_primary,
+        } for c in contacts]
+        
+        return Response({
+            'open_tickets': tickets_data,
+            'open_tickets_count': Ticket.objects.filter(
+                account=account,
+                status__in=['open', 'in_progress', 'pending']
+            ).count(),
+            'recent_invoices': invoices_data,
+            'total_invoices': Invoice.objects.filter(account=account).count(),
+            'contacts': contacts_data,
+            'total_contacts': Contact.objects.filter(account=account).count(),
+        })
+
+    @action(detail=False, methods=['get'])
+    def lookup(self, request):
+        """
+        Lookup accounts for autocomplete.
+        Returns name, billing address, and payment terms.
+        """
+        term = request.query_params.get('term', '').strip()
+        limit = int(request.query_params.get('limit', 10))
+        
+        if not term or len(term) < 2:
+            return Response([])
+        
+        accounts = Account.objects.filter(
+            name__icontains=term
+        ).select_related('owner')[:limit]
+        
+        results = []
+        for account in accounts:
+            billing_address = account.get_primary_billing_address()
+            results.append({
+                'id': account.id,
+                'name': account.name,
+                'account_number': account.account_number,
+                'type': account.type,
+                'payment_terms': account.payment_terms,
+                'credit_limit': str(account.credit_limit) if account.credit_limit else None,
+                'billing_address': {
+                    'street': billing_address.street if billing_address else None,
+                    'city': billing_address.city if billing_address else None,
+                    'state': billing_address.state if billing_address else None,
+                    'postal_code': billing_address.postal_code if billing_address else None,
+                    'country': billing_address.country if billing_address else None,
+                } if billing_address else None,
+            })
+        
+        return Response(results)
+
 
 class ContactViewSet(viewsets.ModelViewSet):
     queryset = Contact.objects.all().order_by('-created_at')

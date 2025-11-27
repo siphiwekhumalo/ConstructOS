@@ -14,11 +14,14 @@ import {
   BarChart3,
   UserCog,
   ShoppingCart,
-  Headphones
+  Headphones,
+  Star
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
+import { GlobalSearch } from "@/components/global-search";
+import { useFavorites } from "@/hooks/use-favorites";
 
 const navItems = [
   { label: "Overview", icon: LayoutDashboard, href: "/dashboard" },
@@ -113,6 +116,10 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                  {location.split('/').pop() || 'Overview'}
                </span>
              </div>
+          </div>
+
+          <div className="flex-1 max-w-xl mx-4 hidden md:block">
+            <GlobalSearch />
           </div>
 
           <div className="flex items-center gap-4">

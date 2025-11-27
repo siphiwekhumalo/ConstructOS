@@ -1,5 +1,6 @@
 import uuid
 import random
+from django.db import models
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -29,6 +30,60 @@ class ProductViewSet(viewsets.ModelViewSet):
     serializer_class = ProductSerializer
     filterset_fields = ['is_active', 'category']
     search_fields = ['name', 'sku', 'description']
+
+    @action(detail=False, methods=['get'])
+    def lookup(self, request):
+        """
+        Lookup products for line item selector.
+        Returns product details with stock availability.
+        """
+        from django.db.models import Sum
+        
+        term = request.query_params.get('term', '').strip()
+        limit = int(request.query_params.get('limit', 10))
+        warehouse_id = request.query_params.get('warehouse_id')
+        
+        if not term or len(term) < 2:
+            return Response([])
+        
+        products = Product.objects.filter(
+            is_active=True
+        ).filter(
+            models.Q(name__icontains=term) |
+            models.Q(sku__icontains=term)
+        )[:limit]
+        
+        results = []
+        for product in products:
+            stock_query = StockItem.objects.filter(product=product)
+            if warehouse_id:
+                stock_query = stock_query.filter(warehouse_id=warehouse_id)
+            
+            total_stock = stock_query.aggregate(total=Sum('quantity'))['total'] or 0
+            
+            in_stock = total_stock > 0
+            stock_status = 'in_stock' if total_stock > product.reorder_level else (
+                'low_stock' if total_stock > 0 else 'out_of_stock'
+            )
+            
+            results.append({
+                'id': product.id,
+                'sku': product.sku,
+                'name': product.name,
+                'description': product.description,
+                'category': product.category,
+                'unit': product.unit,
+                'unit_price': str(product.unit_price),
+                'cost_price': str(product.cost_price) if product.cost_price else None,
+                'stock': {
+                    'quantity': total_stock,
+                    'in_stock': in_stock,
+                    'status': stock_status,
+                    'reorder_level': product.reorder_level,
+                }
+            })
+        
+        return Response(results)
 
 
 class StockItemViewSet(viewsets.ModelViewSet):

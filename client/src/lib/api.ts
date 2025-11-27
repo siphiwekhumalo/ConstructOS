@@ -344,3 +344,134 @@ export async function getDashboardStats(): Promise<any> {
   const response = await fetch(`${API_BASE}/analytics/dashboard/`);
   return handleResponse(response);
 }
+
+export interface SearchResult {
+  id: string;
+  type: 'contact' | 'product' | 'order' | 'ticket';
+  title: string;
+  subtitle: string;
+  [key: string]: any;
+}
+
+export interface SearchResults {
+  contacts: SearchResult[];
+  products: SearchResult[];
+  orders: SearchResult[];
+  tickets: SearchResult[];
+  total: number;
+}
+
+export async function globalSearch(query: string, limit = 5): Promise<SearchResults> {
+  const response = await fetch(`${API_BASE}/search/?q=${encodeURIComponent(query)}&limit=${limit}`);
+  return handleResponse(response);
+}
+
+export interface AccountLookupResult {
+  id: string;
+  name: string;
+  account_number: string;
+  type: string;
+  payment_terms: string;
+  credit_limit: string | null;
+  billing_address: {
+    street: string | null;
+    city: string | null;
+    state: string | null;
+    postal_code: string | null;
+    country: string | null;
+  } | null;
+}
+
+export async function lookupAccounts(term: string, limit = 10): Promise<AccountLookupResult[]> {
+  const response = await fetch(`${API_BASE}/accounts/lookup/?term=${encodeURIComponent(term)}&limit=${limit}`);
+  return handleResponse(response);
+}
+
+export interface ProductLookupResult {
+  id: string;
+  sku: string;
+  name: string;
+  description: string;
+  category: string;
+  unit: string;
+  unit_price: string;
+  cost_price: string | null;
+  stock: {
+    quantity: number;
+    in_stock: boolean;
+    status: 'in_stock' | 'low_stock' | 'out_of_stock';
+    reorder_level: number;
+  };
+}
+
+export async function lookupProducts(term: string, limit = 10, warehouseId?: string): Promise<ProductLookupResult[]> {
+  let url = `${API_BASE}/products/lookup/?term=${encodeURIComponent(term)}&limit=${limit}`;
+  if (warehouseId) url += `&warehouse_id=${warehouseId}`;
+  const response = await fetch(url);
+  return handleResponse(response);
+}
+
+export interface AccountRelatedData {
+  open_tickets: Array<{
+    id: string;
+    ticket_number: string;
+    subject: string;
+    status: string;
+    priority: string;
+    created_at: string;
+  }>;
+  open_tickets_count: number;
+  recent_invoices: Array<{
+    id: string;
+    invoice_number: string;
+    status: string;
+    total_amount: string;
+    due_date: string | null;
+    created_at: string;
+  }>;
+  total_invoices: number;
+  contacts: Array<{
+    id: string;
+    name: string;
+    email: string;
+    title: string;
+    is_primary: boolean;
+  }>;
+  total_contacts: number;
+}
+
+export async function getAccountRelated(accountId: string): Promise<AccountRelatedData> {
+  const response = await fetch(`${API_BASE}/accounts/${accountId}/related/`);
+  return handleResponse(response);
+}
+
+export interface Favorite {
+  id: string;
+  user: string;
+  entity_type: string;
+  entity_id: string;
+  entity_title: string;
+  entity_subtitle: string | null;
+  created_at: string;
+}
+
+export async function getFavorites(userId?: string): Promise<Favorite[]> {
+  let url = `${API_BASE}/favorites/`;
+  if (userId) url += `?user_id=${userId}`;
+  const response = await fetch(url);
+  return handleListResponse(response);
+}
+
+export async function addFavorite(favorite: Omit<Favorite, 'id' | 'created_at'>): Promise<Favorite> {
+  const response = await fetch(`${API_BASE}/favorites/`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(favorite),
+  });
+  return handleResponse(response);
+}
+
+export async function removeFavorite(id: string): Promise<void> {
+  const response = await fetch(`${API_BASE}/favorites/${id}/`, { method: "DELETE" });
+  if (!response.ok) throw new Error("Failed to remove favorite");
+}

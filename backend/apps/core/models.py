@@ -52,3 +52,32 @@ class AuditLog(models.Model):
 
     class Meta:
         db_table = 'audit_logs'
+
+
+class Favorite(models.Model):
+    """
+    User favorites for quick access to frequently used records.
+    """
+    ENTITY_TYPES = [
+        ('account', 'Account'),
+        ('contact', 'Contact'),
+        ('product', 'Product'),
+        ('order', 'Sales Order'),
+        ('ticket', 'Ticket'),
+        ('project', 'Project'),
+    ]
+    
+    id = models.CharField(max_length=255, primary_key=True, default=uuid.uuid4)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, db_column='user_id', related_name='favorites')
+    entity_type = models.TextField(choices=ENTITY_TYPES)
+    entity_id = models.CharField(max_length=255)
+    entity_title = models.TextField()
+    entity_subtitle = models.TextField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'favorites'
+        unique_together = ['user', 'entity_type', 'entity_id']
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.entity_type}: {self.entity_title}"

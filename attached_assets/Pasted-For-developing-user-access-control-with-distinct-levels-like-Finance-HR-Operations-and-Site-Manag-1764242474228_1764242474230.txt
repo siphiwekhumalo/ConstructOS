@@ -1,0 +1,79 @@
+For developing user access control with distinct levels like Finance, HR, Operations, and Site Manager, you should implement Role-Based Access Control (RBAC) in your Django application, using Microsoft Entra ID (formerly Azure AD) as your centralized identity provider.
+
+This approach involves three main steps: defining roles in Entra ID, authenticating users, and then enforcing those roles within your Django microservices.
+
+1. ⚙️ Define Roles in Microsoft Entra ID
+Microsoft Entra ID will act as the source of truth for who a user is and what their primary roles are.
+
+App Registration: First, register your Django application in the Microsoft Entra ID portal. This provides you with the Client ID and Tenant ID.
+
+Application Roles (App Roles): Define your application-specific roles directly within your application's manifest in Entra ID. These roles represent the high-level access levels you need:
+
+Finance_User
+
+HR_Manager
+
+Operations_Specialist
+
+Site_Manager
+
+Assign Users/Groups: Assign individual users or, more efficiently, Entra ID Security Groups to these specific Application Roles. This is typically done by an administrator in the Entra ID portal.
+
+2. 🔑 Authenticate and Get Access Tokens in Django
+Your Django application must use an authentication flow that retrieves the user's role information from Entra ID.
+
+Authentication Protocol: Use the OAuth 2.0 or OpenID Connect (OIDC) flow. The user signs in using their organization credentials.
+
+Token Retrieval: Upon successful sign-in, your Django backend receives a JWT (JSON Web Token).
+
+JWT Validation and Role Extraction: You must validate the JWT's signature and expiration date. Crucially, the Entra ID token will contain a claim (often named roles or wids) that lists all the Application Roles assigned to the user (e.g., ["Finance_User", "Operations_Specialist"]).
+
+Technology: Use a Python library like python-social-auth or a dedicated Entra ID client library to handle the complexity of the OIDC flow and JWT parsing within your Django application.
+
+3. 🛡️ Enforce Permissions Across Microservices (RBAC)
+Once you have the user's roles in your Django session/context, you use them to control access to specific API endpoints and data within each microservice.
+
+A. API Gateway Enforcement
+The API Gateway should be the first line of defense.
+
+Initial Check: The Gateway validates the incoming JWT and ensures the token is present and valid before routing the request to any microservice.
+
+Simple Routing: For some operations, the Gateway might only allow tokens with a certain role to reach a service (e.g., only users with the HR_Manager role can access the HR Service).
+
+B. Microservice Enforcement (Django/DRF)
+Each Django microservice uses the extracted role information to apply fine-grained permissions.
+
+DRF Permissions Classes: Use custom Django REST Framework (DRF) Permission Classes to check the role claim against the required permission for a view.
+
+Python
+
+# Example DRF Permission Class
+from rest_framework.permissions import BasePermission
+
+class IsFinanceUser(BasePermission):
+    def has_permission(self, request, view):
+        # Assumes role is extracted from JWT and placed in request.user.roles
+        return "Finance_User" in request.user.roles
+
+# Example View in the Finance Service
+class InvoiceViewSet(viewsets.ModelViewSet):
+    queryset = Invoice.objects.all()
+    serializer_class = InvoiceSerializer
+    # Only users with the Finance_User role can access this view
+    permission_classes = [IsFinanceUser]
+Object-Level Permissions: For data access (e.g., a Site Manager can only see orders for their site), you must filter the QuerySet based on the user's identity and roles.
+
+Example: The Site_Manager role grants the ability to read all records, but the view's get_queryset method is overridden to filter the results:
+
+Python
+
+# Example QuerySet Filtering
+class OrderViewSet(viewsets.ModelViewSet):
+    def get_queryset(self):
+        user = self.request.user
+        if "Site_Manager" in user.roles:
+            # Filter orders based on the Site Manager's assigned site
+            return Order.objects.filter(site=user.profile.site_id)
+        # Default behavior for other roles
+        return Order.objects.all()
+By following this three-step strategy, you maintain a separation of concerns: Entra ID manages identity and role assignment, your JWT token carries the role information, and your Django microservices enforce the rules based on those roles.

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User, Event, AuditLog
+from .models import User, Event, AuditLog, Favorite
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -28,4 +28,11 @@ class AuditLogSerializer(serializers.ModelSerializer):
     class Meta:
         model = AuditLog
         fields = '__all__'
+        read_only_fields = ['id', 'created_at']
+
+
+class FavoriteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Favorite
+        fields = ['id', 'user', 'entity_type', 'entity_id', 'entity_title', 'entity_subtitle', 'created_at']
         read_only_fields = ['id', 'created_at']
