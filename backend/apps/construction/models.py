@@ -11,17 +11,42 @@ class Project(models.Model):
     location = models.TextField()
     status = models.TextField()
     progress = models.IntegerField(default=0)
+    planned_progress = models.IntegerField(default=0, help_text="Expected progress percentage based on schedule")
     budget = models.DecimalField(max_digits=12, decimal_places=2)
+    actual_cost = models.DecimalField(max_digits=12, decimal_places=2, default=0, help_text="Actual cost to date")
     due_date = models.TextField()
     account = models.ForeignKey(Account, on_delete=models.SET_NULL, null=True, db_column='account_id')
     manager = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, db_column='manager_id')
     description = models.TextField(null=True, blank=True)
     start_date = models.DateTimeField(null=True, blank=True)
+    next_milestone_date = models.DateField(null=True, blank=True, help_text="Date of next project milestone")
+    next_milestone_name = models.TextField(null=True, blank=True, help_text="Name of next project milestone")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         db_table = 'projects'
+    
+    @property
+    def progress_variance(self):
+        """Calculate progress variance (actual - planned). Negative = behind schedule."""
+        return self.progress - self.planned_progress
+    
+    @property
+    def cost_variance(self):
+        """Calculate cost variance (budget - actual). Negative = over budget."""
+        return float(self.budget) - float(self.actual_cost)
+    
+    @property
+    def health_status(self):
+        """Determine project health based on progress variance."""
+        variance = self.progress_variance
+        if variance >= 0:
+            return 'on_track'
+        elif variance >= -5:
+            return 'at_risk'
+        else:
+            return 'delayed'
 
 
 class Transaction(models.Model):

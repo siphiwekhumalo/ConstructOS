@@ -1,6 +1,9 @@
 import uuid
 import random
+from datetime import datetime, timedelta
+from decimal import Decimal
 from django.http import HttpResponse
+from django.db.models import Sum, Avg, Count, Q
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser, FormParser
@@ -9,7 +12,8 @@ from rest_framework.views import APIView
 from .models import Project, Transaction, Equipment, SafetyInspection, Document
 from .serializers import (
     ProjectSerializer, TransactionSerializer, EquipmentSerializer,
-    SafetyInspectionSerializer, DocumentSerializer
+    SafetyInspectionSerializer, DocumentSerializer,
+    ProjectMetricsSerializer, ProjectCashflowSerializer
 )
 from backend.apps.core.storage_service import storage_service
 from backend.apps.core.telemetry import traced, SpanContext
@@ -24,6 +28,148 @@ class ProjectViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         project_id = f"PRJ-{random.randint(100000, 999999)}"
         serializer.save(id=project_id)
+    
+    @action(detail=False, methods=['get'], url_path='summary')
+    def portfolio_summary(self, request):
+        """
+        Get portfolio-level project metrics summary.
+        Returns aggregated KPIs for the entire project portfolio.
+        """
+        projects = Project.objects.all()
+        
+        total_projects = projects.count()
+        active_projects = projects.exclude(status__in=['Completed', 'Cancelled']).count()
+        
+        on_track = 0
+        at_risk = 0
+        delayed = 0
+        
+        for project in projects:
+            variance = project.progress - project.planned_progress
+            if variance >= 0:
+                on_track += 1
+            elif variance >= -5:
+                at_risk += 1
+            else:
+                delayed += 1
+        
+        totals = projects.aggregate(
+            total_budget=Sum('budget'),
+            total_actual_cost=Sum('actual_cost'),
+            avg_progress=Avg('progress')
+        )
+        
+        total_budget = totals['total_budget'] or Decimal('0')
+        total_actual = totals['total_actual_cost'] or Decimal('0')
+        
+        metrics = {
+            'total_projects': total_projects,
+            'active_projects': active_projects,
+            'on_track_count': on_track,
+            'at_risk_count': at_risk,
+            'delayed_count': delayed,
+            'total_budget': total_budget,
+            'total_actual_cost': total_actual,
+            'overall_cost_variance': total_budget - total_actual,
+            'avg_progress': totals['avg_progress'] or 0,
+        }
+        
+        serializer = ProjectMetricsSerializer(metrics)
+        return Response(serializer.data)
+    
+    @action(detail=True, methods=['get'], url_path='cashflow')
+    def cashflow(self, request, pk=None):
+        """
+        Get cashflow trend data for a specific project.
+        Returns daily spending amounts for the last 90 days.
+        """
+        project = self.get_object()
+        
+        end_date = datetime.now()
+        start_date = end_date - timedelta(days=90)
+        
+        transactions = Transaction.objects.filter(
+            project=project,
+            date__gte=start_date,
+            date__lte=end_date,
+            type='expense'
+        ).values('date').annotate(
+            daily_amount=Sum('amount')
+        ).order_by('date')
+        
+        cashflow_data = []
+        cumulative = Decimal('0')
+        
+        for txn in transactions:
+            cumulative += txn['daily_amount'] or Decimal('0')
+            cashflow_data.append({
+                'date': txn['date'].date() if hasattr(txn['date'], 'date') else txn['date'],
+                'amount': txn['daily_amount'],
+                'cumulative': cumulative,
+            })
+        
+        serializer = ProjectCashflowSerializer(cashflow_data, many=True)
+        return Response({
+            'project_id': project.id,
+            'project_name': project.name,
+            'period': {'start': start_date.date(), 'end': end_date.date()},
+            'data': serializer.data,
+        })
+    
+    @action(detail=True, methods=['get'], url_path='metrics')
+    def project_metrics(self, request, pk=None):
+        """
+        Get detailed metrics for a specific project.
+        Includes variance calculations, issue counts, and milestone info.
+        """
+        project = self.get_object()
+        
+        open_inspections = SafetyInspection.objects.filter(
+            project=project,
+            status__in=['Failed', 'Needs Review', 'In Progress']
+        ).count()
+        
+        total_transactions = Transaction.objects.filter(project=project).aggregate(
+            total_expenses=Sum('amount', filter=Q(type='expense')),
+            total_income=Sum('amount', filter=Q(type='income')),
+            transaction_count=Count('id')
+        )
+        
+        days_until = None
+        if project.next_milestone_date:
+            from datetime import date
+            delta = project.next_milestone_date - date.today()
+            days_until = max(0, delta.days)
+        
+        return Response({
+            'project_id': project.id,
+            'project_name': project.name,
+            'progress': {
+                'actual': project.progress,
+                'planned': project.planned_progress,
+                'variance': project.progress - project.planned_progress,
+            },
+            'budget': {
+                'budgeted': float(project.budget),
+                'actual': float(project.actual_cost),
+                'variance': float(project.budget) - float(project.actual_cost),
+                'variance_percent': ((float(project.budget) - float(project.actual_cost)) / float(project.budget) * 100) if project.budget else 0,
+            },
+            'milestone': {
+                'name': project.next_milestone_name,
+                'date': project.next_milestone_date,
+                'days_remaining': days_until,
+            },
+            'issues': {
+                'open_inspections': open_inspections,
+            },
+            'financials': {
+                'total_expenses': float(total_transactions['total_expenses'] or 0),
+                'total_income': float(total_transactions['total_income'] or 0),
+                'transaction_count': total_transactions['transaction_count'] or 0,
+            },
+            'health_status': project.health_status,
+        })
 
 
 class TransactionViewSet(viewsets.ModelViewSet):

@@ -80,9 +80,91 @@ async function handleListResponse<T>(response: Response): Promise<T[]> {
   return data as T[];
 }
 
-export async function getProjects(): Promise<Project[]> {
+export interface ProjectMetrics {
+  total_projects: number;
+  active_projects: number;
+  on_track_count: number;
+  at_risk_count: number;
+  delayed_count: number;
+  total_budget: string;
+  total_actual_cost: string;
+  overall_cost_variance: string;
+  avg_progress: number;
+}
+
+export interface ProjectDetailMetrics {
+  project_id: string;
+  project_name: string;
+  progress: {
+    actual: number;
+    planned: number;
+    variance: number;
+  };
+  budget: {
+    budgeted: number;
+    actual: number;
+    variance: number;
+    variance_percent: number;
+  };
+  milestone: {
+    name: string | null;
+    date: string | null;
+    days_remaining: number | null;
+  };
+  issues: {
+    open_inspections: number;
+  };
+  financials: {
+    total_expenses: number;
+    total_income: number;
+    transaction_count: number;
+  };
+  health_status: 'on_track' | 'at_risk' | 'delayed';
+}
+
+export interface CashflowDataPoint {
+  date: string;
+  amount: string;
+  cumulative: string;
+}
+
+export interface ProjectCashflow {
+  project_id: string;
+  project_name: string;
+  period: { start: string; end: string };
+  data: CashflowDataPoint[];
+}
+
+export interface ExtendedProject extends Project {
+  plannedProgress?: number;
+  actualCost?: string;
+  nextMilestoneDate?: string;
+  nextMilestoneName?: string;
+  progress_variance?: number;
+  cost_variance?: number;
+  health_status?: 'on_track' | 'at_risk' | 'delayed';
+  days_until_milestone?: number | null;
+  open_issues_count?: number;
+}
+
+export async function getProjects(): Promise<ExtendedProject[]> {
   const response = await authFetch(`${API_BASE}/projects/`);
   return handleListResponse(response);
+}
+
+export async function getProjectsSummary(): Promise<ProjectMetrics> {
+  const response = await authFetch(`${API_BASE}/projects/summary/`);
+  return handleResponse(response);
+}
+
+export async function getProjectMetrics(projectId: string): Promise<ProjectDetailMetrics> {
+  const response = await authFetch(`${API_BASE}/projects/${projectId}/metrics/`);
+  return handleResponse(response);
+}
+
+export async function getProjectCashflow(projectId: string): Promise<ProjectCashflow> {
+  const response = await authFetch(`${API_BASE}/projects/${projectId}/cashflow/`);
+  return handleResponse(response);
 }
 
 export async function createProject(project: InsertProject): Promise<Project> {
