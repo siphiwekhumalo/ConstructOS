@@ -1,0 +1,54 @@
+Databases (Polyglot Persistence)
+Principle: Each microservice should own its own database to ensure independence.
+
+Technology:
+
+PostgreSQL/MySQL: Standard choice for relational data in most Django services (e.g., Sales, Finance, HR).
+
+MongoDB/NoSQL: Good for specific use cases like Marketing (user event logs, high-volume unstructured data).
+
+Redis: Used for caching, session management, and as a fast broker for message queues.
+
+🏗️ Inter-Service APIs & Communication
+Communication between services is critical and often uses two main patterns:
+
+1. Synchronous Communication (API Calls)
+Mechanism: RESTful APIs using DRF on each microservice. When one service needs immediate data from another (e.g., the Order Service needs the customer's details from the Contact Service), it makes an HTTP request.
+
+Standard: Use clear, versioned RESTful API endpoints (e.g., /api/v1/contacts/{id}).
+
+2. Asynchronous Communication (Pipelines & Message Queues)
+Mechanism: Use a Message Broker for non-critical, long-running, or fan-out tasks. This decouples services, preventing one from failing if another is slow.
+
+Example Pipeline: When a SalesOrder is created in the Order Service, it emits an event to the queue.
+
+Finance Service consumes the event to generate an Invoice.
+
+Inventory Service consumes the event to reserve StockItems.
+
+Email Service consumes the event to send an order confirmation.
+
+Technology:
+
+Message Broker: RabbitMQ or Redis (as a simple broker). For high-volume event streaming, Apache Kafka is a common choice.
+
+Task Queue: Celery (with RabbitMQ/Redis as the broker) is the standard Python/Django library for managing workers and processing these asynchronous tasks.
+
+🚀 Deployment and DevOps Pipeline
+To manage these many services, you need a robust deployment setup.
+
+Containerization: Use Docker to containerize each Django microservice, database, and background worker (Celery). This ensures consistency across development, staging, and production.
+
+Orchestration: Use Kubernetes (K8s) or Docker Compose (for simpler setups) to manage and scale the containers for each microservice independently.
+
+CI/CD Pipeline: Use a tool like GitHub Actions, GitLab CI, or Jenkins to automate:
+
+Code testing (unit, integration).
+
+Building Docker images.
+
+Pushing images to a container registry.
+
+Deploying new versions to your staging/production environment.
+
+This architecture ensures that your CRM and ERP components can evolve independently, scale as needed, and remain resilient to failures in a single domain.

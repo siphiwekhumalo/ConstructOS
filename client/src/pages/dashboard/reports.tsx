@@ -20,20 +20,156 @@ import {
   Link2,
   Table2,
   PieChart,
-  TrendingUp
+  TrendingUp,
+  Loader2
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getProjects, getTransactions, getClients, getEquipment, getSafetyInspections } from "@/lib/api";
+
+interface PowerBIConfig {
+  workspaceId: string;
+  reportId: string;
+  embedToken: string;
+  embedUrl: string;
+}
+
+declare global {
+  interface Window {
+    powerbi: any;
+  }
+}
+
+function PowerBIEmbed({ config, onError }: { config: PowerBIConfig; onError: (error: string) => void }) {
+  const embedContainerRef = useRef<HTMLDivElement>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [embedError, setEmbedError] = useState<string | null>(null);
+  const [sdkLoaded, setSdkLoaded] = useState(false);
+
+  useEffect(() => {
+    if (window.powerbi) {
+      setSdkLoaded(true);
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/powerbi-client@2.22.3/dist/powerbi.min.js';
+    script.async = true;
+    script.onload = () => {
+      setSdkLoaded(true);
+    };
+    script.onerror = () => {
+      setEmbedError('Failed to load Power BI SDK');
+      setIsLoading(false);
+      onError('Failed to load Power BI SDK');
+    };
+    document.head.appendChild(script);
+
+    return () => {
+      if (script.parentNode) {
+        script.parentNode.removeChild(script);
+      }
+    };
+  }, [onError]);
+
+  useEffect(() => {
+    if (!sdkLoaded || !embedContainerRef.current || !config.embedToken || !config.reportId) {
+      return;
+    }
+
+    setIsLoading(true);
+    setEmbedError(null);
+
+    try {
+      const powerbi = window.powerbi;
+      if (!powerbi) {
+        throw new Error('Power BI SDK not available');
+      }
+
+      const embedConfig = {
+        type: 'report',
+        id: config.reportId,
+        embedUrl: config.embedUrl || `https://app.powerbi.com/reportEmbed?reportId=${config.reportId}&groupId=${config.workspaceId}`,
+        accessToken: config.embedToken,
+        tokenType: 1,
+        permissions: 0,
+        settings: {
+          panes: {
+            filters: { visible: true, expanded: false },
+            pageNavigation: { visible: true }
+          },
+          background: 1,
+        }
+      };
+
+      const report = powerbi.embed(embedContainerRef.current, embedConfig);
+
+      report.on('loaded', () => {
+        setIsLoading(false);
+      });
+
+      report.on('error', (event: any) => {
+        const errorMessage = event?.detail?.message || 'Failed to load Power BI report';
+        setEmbedError(errorMessage);
+        setIsLoading(false);
+        onError(errorMessage);
+      });
+
+      return () => {
+        if (embedContainerRef.current) {
+          powerbi.reset(embedContainerRef.current);
+        }
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to initialize Power BI';
+      setEmbedError(errorMessage);
+      setIsLoading(false);
+      onError(errorMessage);
+    }
+  }, [sdkLoaded, config, onError]);
+
+  if (embedError) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full min-h-[400px] p-8 text-center">
+        <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
+        <h3 className="text-lg font-medium mb-2">Power BI Connection Error</h3>
+        <p className="text-sm text-muted-foreground max-w-md mb-4">{embedError}</p>
+        <p className="text-xs text-muted-foreground">
+          Please verify your credentials and ensure your embed token is valid.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative min-h-[500px]">
+      {isLoading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-10">
+          <div className="flex flex-col items-center gap-2">
+            <Loader2 className="h-8 w-8 animate-spin text-[#F2C811]" />
+            <span className="text-sm text-muted-foreground">Loading Power BI report...</span>
+          </div>
+        </div>
+      )}
+      <div 
+        ref={embedContainerRef} 
+        className="w-full min-h-[500px] bg-black/10 rounded-sm"
+        style={{ height: "500px" }}
+      />
+    </div>
+  );
+}
 
 export default function DashboardReports() {
   const [isPowerBIConnected, setIsPowerBIConnected] = useState(false);
   const [isConfigDialogOpen, setIsConfigDialogOpen] = useState(false);
-  const [powerBIConfig, setPowerBIConfig] = useState({
+  const [powerBIConfig, setPowerBIConfig] = useState<PowerBIConfig>({
     workspaceId: "",
     reportId: "",
     embedToken: "",
+    embedUrl: "",
   });
+  const [powerBIError, setPowerBIError] = useState<string | null>(null);
   const [exportStatus, setExportStatus] = useState<{type: string; status: 'idle' | 'loading' | 'success' | 'error'}>({ type: '', status: 'idle' });
 
   const { data: projects } = useQuery({ queryKey: ["projects"], queryFn: getProjects });
@@ -43,10 +179,21 @@ export default function DashboardReports() {
   const { data: safetyInspections } = useQuery({ queryKey: ["safetyInspections"], queryFn: getSafetyInspections });
 
   const handlePowerBIConnect = () => {
-    if (powerBIConfig.workspaceId && powerBIConfig.reportId) {
+    if (powerBIConfig.workspaceId && powerBIConfig.reportId && powerBIConfig.embedToken) {
+      setPowerBIError(null);
       setIsPowerBIConnected(true);
       setIsConfigDialogOpen(false);
     }
+  };
+
+  const handlePowerBIError = useCallback((error: string) => {
+    setPowerBIError(error);
+  }, []);
+
+  const handleDisconnect = () => {
+    setIsPowerBIConnected(false);
+    setPowerBIError(null);
+    setPowerBIConfig({ workspaceId: "", reportId: "", embedToken: "", embedUrl: "" });
   };
 
   const generateCSV = (data: any[], filename: string) => {
@@ -202,7 +349,7 @@ export default function DashboardReports() {
                           <Link2 className="h-4 w-4" /> Connect Power BI
                         </Button>
                       </DialogTrigger>
-                      <DialogContent className="bg-card border-white/10">
+                      <DialogContent className="bg-card border-white/10 max-w-lg">
                         <DialogHeader>
                           <DialogTitle>Configure Power BI Embedded</DialogTitle>
                           <DialogDescription>
@@ -220,7 +367,7 @@ export default function DashboardReports() {
                             </ul>
                           </div>
                           <div className="space-y-2">
-                            <Label>Workspace ID</Label>
+                            <Label>Workspace ID (Group ID)</Label>
                             <Input
                               placeholder="e.g., xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
                               value={powerBIConfig.workspaceId}
@@ -240,23 +387,36 @@ export default function DashboardReports() {
                             />
                           </div>
                           <div className="space-y-2">
-                            <Label>Embed Token (from backend)</Label>
+                            <Label>Embed URL (Optional)</Label>
+                            <Input
+                              placeholder="https://app.powerbi.com/reportEmbed?..."
+                              value={powerBIConfig.embedUrl}
+                              onChange={(e) => setPowerBIConfig({ ...powerBIConfig, embedUrl: e.target.value })}
+                              className="bg-background border-white/10 font-mono text-sm"
+                              data-testid="input-embed-url"
+                            />
+                            <p className="text-xs text-muted-foreground">
+                              Leave empty to auto-generate from Workspace and Report IDs.
+                            </p>
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Embed Token</Label>
                             <Input
                               type="password"
-                              placeholder="Generated by your backend service"
+                              placeholder="eyJ0eXAiOiJKV1QiLCJhbGciOi..."
                               value={powerBIConfig.embedToken}
                               onChange={(e) => setPowerBIConfig({ ...powerBIConfig, embedToken: e.target.value })}
                               className="bg-background border-white/10"
                               data-testid="input-embed-token"
                             />
                             <p className="text-xs text-muted-foreground">
-                              Token should be generated server-side using Azure AD authentication.
+                              Token should be generated server-side using Azure AD authentication and Power BI REST API.
                             </p>
                           </div>
                           <Button 
                             className="w-full bg-[#F2C811] text-black hover:bg-[#F2C811]/90" 
                             onClick={handlePowerBIConnect}
-                            disabled={!powerBIConfig.workspaceId || !powerBIConfig.reportId}
+                            disabled={!powerBIConfig.workspaceId || !powerBIConfig.reportId || !powerBIConfig.embedToken}
                             data-testid="button-save-config"
                           >
                             Connect & Embed Report
@@ -270,7 +430,7 @@ export default function DashboardReports() {
                         <div className="h-2 w-2 bg-green-500 rounded-full animate-pulse" />
                         Connected
                       </div>
-                      <Button variant="ghost" size="icon" onClick={() => setIsPowerBIConnected(false)}>
+                      <Button variant="ghost" size="icon" onClick={handleDisconnect} title="Disconnect">
                         <Settings className="h-4 w-4" />
                       </Button>
                     </div>
@@ -310,38 +470,27 @@ export default function DashboardReports() {
                     </Button>
                   </div>
                 ) : (
-                  <div className="p-6 space-y-6">
-                    <div className="flex items-center justify-between mb-6">
+                  <div className="p-0">
+                    <div className="flex items-center justify-between p-4 border-b border-white/5">
                       <div className="flex items-center gap-4">
-                        <Select defaultValue="overview">
-                          <SelectTrigger className="w-[200px] bg-background border-white/10">
-                            <SelectValue placeholder="Select Report" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="overview">Executive Overview</SelectItem>
-                            <SelectItem value="costs">Cost Analysis</SelectItem>
-                            <SelectItem value="labor">Labor Efficiency</SelectItem>
-                            <SelectItem value="safety">Safety Metrics</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <span className="text-xs text-muted-foreground">Last refreshed: Just now</span>
+                        <span className="text-xs text-muted-foreground font-mono">
+                          Report: {powerBIConfig.reportId.slice(0, 8)}...
+                        </span>
+                        <span className="text-xs text-muted-foreground">|</span>
+                        <span className="text-xs text-muted-foreground font-mono">
+                          Workspace: {powerBIConfig.workspaceId.slice(0, 8)}...
+                        </span>
                       </div>
-                      <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground">
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="gap-2 text-muted-foreground"
+                        onClick={() => window.open(`https://app.powerbi.com/groups/${powerBIConfig.workspaceId}/reports/${powerBIConfig.reportId}`, '_blank')}
+                      >
                         <ExternalLink className="h-3 w-3" /> Open in Power BI
                       </Button>
                     </div>
-
-                    <div className="bg-secondary/20 border border-dashed border-white/10 rounded-sm p-8 text-center min-h-[400px] flex items-center justify-center">
-                      <div>
-                        <BarChart3 className="h-12 w-12 text-[#F2C811] mx-auto mb-4" />
-                        <p className="text-sm text-muted-foreground">
-                          Power BI Report will be embedded here using the Power BI JavaScript SDK.
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-2 font-mono">
-                          Workspace: {powerBIConfig.workspaceId.slice(0, 8)}...
-                        </p>
-                      </div>
-                    </div>
+                    <PowerBIEmbed config={powerBIConfig} onError={handlePowerBIError} />
                   </div>
                 )}
               </CardContent>
