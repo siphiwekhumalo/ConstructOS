@@ -199,3 +199,48 @@ class EventViewSet(viewsets.ModelViewSet):
 class AuditLogViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = AuditLog.objects.all().order_by('-created_at')
     serializer_class = AuditLogSerializer
+
+
+class HealthCheckView(APIView):
+    """
+    Health check endpoints for Kubernetes liveness and readiness probes.
+    """
+    def get(self, request, check_type='liveness'):
+        from django.db import connection
+        from django.core.cache import cache
+        
+        health = {
+            'status': 'healthy',
+            'timestamp': __import__('datetime').datetime.utcnow().isoformat(),
+            'checks': {}
+        }
+        
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute('SELECT 1')
+            health['checks']['database'] = 'healthy'
+        except Exception as e:
+            health['checks']['database'] = f'unhealthy: {str(e)}'
+            health['status'] = 'unhealthy'
+        
+        if check_type == 'readiness':
+            try:
+                cache.set('health_check', 'ok', 10)
+                if cache.get('health_check') == 'ok':
+                    health['checks']['cache'] = 'healthy'
+                else:
+                    health['checks']['cache'] = 'degraded'
+            except Exception as e:
+                health['checks']['cache'] = f'unavailable: {str(e)}'
+        
+        status_code = 200 if health['status'] == 'healthy' else 503
+        return Response(health, status=status_code)
+
+
+class CacheStatsView(APIView):
+    """
+    View Redis cache statistics for monitoring.
+    """
+    def get(self, request):
+        from backend.apps.core.cache import CacheStats
+        return Response(CacheStats.get_info())
