@@ -1,0 +1,23 @@
+{
+  "name": "constructos-gateway",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch index.ts",
+    "build": "esbuild index.ts --platform=node --packages=external --bundle --format=esm --outfile=dist/index.js",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "http-proxy-middleware": "^3.0.5"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.19.0",
+    "esbuild": "^0.25.0",
+    "tsx": "^4.20.5",
+    "typescript": "^5.6.3"
+  }
+}

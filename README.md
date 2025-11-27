@@ -2,6 +2,28 @@
 
 ConstructOS is a comprehensive construction management system that provides a full-stack solution for managing construction projects, equipment, safety inspections, finances, documents, and client relationships. Built with modern technologies, it offers enterprise-grade features including Role-Based Access Control (RBAC) with Microsoft Entra ID (Azure AD) authentication.
 
+## Architecture
+
+ConstructOS supports two deployment modes:
+
+### Monolithic Mode (Current)
+Single Django application with all modules bundled together. Suitable for development and small deployments.
+
+### Microservices Mode (services/ directory)
+Eight domain-aligned Django microservices with an Express.js API Gateway. Suitable for production and large-scale deployments.
+
+| Service | Port | Responsibility |
+|---------|------|----------------|
+| API Gateway | 5000 | Request routing, authentication, rate limiting |
+| Identity Service | 8001 | Users, accounts, contacts, authentication |
+| Sales Service | 8002 | Leads, opportunities, campaigns |
+| Finance Service | 8003 | Invoices, payments, transactions |
+| Inventory Service | 8004 | Warehouses, products, stock, equipment |
+| HR Service | 8005 | Employees, payroll, leave requests |
+| Compliance Service | 8006 | Tickets, safety inspections |
+| Project Service | 8007 | Projects, sales/purchase orders |
+| Document Service | 8008 | Documents, file management |
+
 ## Features
 
 ### Core Modules

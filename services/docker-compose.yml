@@ -1,0 +1,237 @@
+version: '3.8'
+
+services:
+  # Shared PostgreSQL for development (in production, each service gets its own DB)
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: constructos
+      POSTGRES_PASSWORD: constructos_dev
+      POSTGRES_DB: constructos_dev
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-databases.sql:/docker-entrypoint-initdb.d/init-databases.sql
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U constructos"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Redis for event bus and caching
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # API Gateway (Express.js)
+  gateway:
+    build:
+      context: ../
+      dockerfile: services/gateway/Dockerfile
+    ports:
+      - "5000:5000"
+    environment:
+      NODE_ENV: development
+      IDENTITY_SERVICE_URL: http://identity:8001
+      SALES_SERVICE_URL: http://sales:8002
+      FINANCE_SERVICE_URL: http://finance:8003
+      INVENTORY_SERVICE_URL: http://inventory:8004
+      HR_SERVICE_URL: http://hr:8005
+      COMPLIANCE_SERVICE_URL: http://compliance:8006
+      PROJECT_SERVICE_URL: http://project:8007
+      DOCUMENT_SERVICE_URL: http://document:8008
+    depends_on:
+      - identity
+      - sales
+      - finance
+      - inventory
+      - hr
+      - compliance
+      - project
+      - document
+
+  # Identity/Contact Service
+  identity:
+    build:
+      context: ./identity
+      dockerfile: Dockerfile
+    ports:
+      - "8001:8001"
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings
+      IDENTITY_SERVICE_PORT: 8001
+      IDENTITY_DB_NAME: identity_db
+      IDENTITY_DB_USER: constructos
+      IDENTITY_DB_PASSWORD: constructos_dev
+      IDENTITY_DB_HOST: postgres
+      IDENTITY_DB_PORT: 5432
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # Sales/Marketing Service
+  sales:
+    build:
+      context: ./sales
+      dockerfile: Dockerfile
+    ports:
+      - "8002:8002"
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings
+      SALES_SERVICE_PORT: 8002
+      SALES_DB_NAME: sales_db
+      SALES_DB_USER: constructos
+      SALES_DB_PASSWORD: constructos_dev
+      SALES_DB_HOST: postgres
+      SALES_DB_PORT: 5432
+      REDIS_URL: redis://redis:6379/1
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # Finance/Accounting Service
+  finance:
+    build:
+      context: ./finance
+      dockerfile: Dockerfile
+    ports:
+      - "8003:8003"
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings
+      FINANCE_SERVICE_PORT: 8003
+      FINANCE_DB_NAME: finance_db
+      FINANCE_DB_USER: constructos
+      FINANCE_DB_PASSWORD: constructos_dev
+      FINANCE_DB_HOST: postgres
+      FINANCE_DB_PORT: 5432
+      REDIS_URL: redis://redis:6379/2
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # Inventory/Logistics Service
+  inventory:
+    build:
+      context: ./inventory
+      dockerfile: Dockerfile
+    ports:
+      - "8004:8004"
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings
+      INVENTORY_SERVICE_PORT: 8004
+      INVENTORY_DB_NAME: inventory_db
+      INVENTORY_DB_USER: constructos
+      INVENTORY_DB_PASSWORD: constructos_dev
+      INVENTORY_DB_HOST: postgres
+      INVENTORY_DB_PORT: 5432
+      REDIS_URL: redis://redis:6379/3
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # HR/Payroll Service
+  hr:
+    build:
+      context: ./hr
+      dockerfile: Dockerfile
+    ports:
+      - "8005:8005"
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings
+      HR_SERVICE_PORT: 8005
+      HR_DB_NAME: hr_db
+      HR_DB_USER: constructos
+      HR_DB_PASSWORD: constructos_dev
+      HR_DB_HOST: postgres
+      HR_DB_PORT: 5432
+      REDIS_URL: redis://redis:6379/4
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # Compliance/Support Service
+  compliance:
+    build:
+      context: ./compliance
+      dockerfile: Dockerfile
+    ports:
+      - "8006:8006"
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings
+      COMPLIANCE_SERVICE_PORT: 8006
+      COMPLIANCE_DB_NAME: compliance_db
+      COMPLIANCE_DB_USER: constructos
+      COMPLIANCE_DB_PASSWORD: constructos_dev
+      COMPLIANCE_DB_HOST: postgres
+      COMPLIANCE_DB_PORT: 5432
+      REDIS_URL: redis://redis:6379/5
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # Order/Project Service
+  project:
+    build:
+      context: ./project
+      dockerfile: Dockerfile
+    ports:
+      - "8007:8007"
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings
+      PROJECT_SERVICE_PORT: 8007
+      PROJECT_DB_NAME: project_db
+      PROJECT_DB_USER: constructos
+      PROJECT_DB_PASSWORD: constructos_dev
+      PROJECT_DB_HOST: postgres
+      PROJECT_DB_PORT: 5432
+      REDIS_URL: redis://redis:6379/6
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # Document/Asset Service
+  document:
+    build:
+      context: ./document
+      dockerfile: Dockerfile
+    ports:
+      - "8008:8008"
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings
+      DOCUMENT_SERVICE_PORT: 8008
+      DOCUMENT_DB_NAME: document_db
+      DOCUMENT_DB_USER: constructos
+      DOCUMENT_DB_PASSWORD: constructos_dev
+      DOCUMENT_DB_HOST: postgres
+      DOCUMENT_DB_PORT: 5432
+      REDIS_URL: redis://redis:6379/7
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
