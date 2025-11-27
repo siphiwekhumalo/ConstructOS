@@ -34,19 +34,14 @@ jobs:
         postgresql password: test_pass
     - name: Install dependencies
       run: |
-        pip install -r backend/requirements.txt
+        pip install .
         pip install azure-storage-blob
+
     - name: Run Django migrations
       run: |
         python manage.py migrate --settings=backend.settings
-    - name: 🏃 Run Unit and Integration Tests (Pytest)
-      env:
-        DJANGO_SETTINGS_MODULE: backend.settings
-        POSTGRES_DB: test_db
-        POSTGRES_USER: test_user
-        POSTGRES_PASSWORD: test_pass
-        POSTGRES_HOST: localhost
-        POSTGRES_PORT: 5432
+
+    - name: Run tests
       run: |
         pytest backend/tests/ --cov=backend/ --junitxml=reports/python-test-results.xml
 
