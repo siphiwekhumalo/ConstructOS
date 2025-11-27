@@ -16,4 +16,5 @@ urlpatterns = [
     path('api/v1/', include('backend.apps.crm.urls')),
     path('api/v1/', include('backend.apps.erp.urls')),
     path('api/v1/', include('backend.apps.construction.urls')),
+    path('api/v1/ai/', include('backend.apps.ai.urls')),
 ]

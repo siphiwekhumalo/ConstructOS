@@ -23,6 +23,29 @@ Eight domain-aligned Django microservices with an Express.js API Gateway. Suitab
 | Compliance Service | 8006 | Tickets, safety inspections |
 | Project Service | 8007 | Projects, sales/purchase orders |
 | Document Service | 8008 | Documents, file management |
+| AI Service | 8009 | ML predictions (credit risk, forecasting, maintenance) |
+
+### AI/ML Integration
+
+The platform includes machine learning capabilities for predictive analytics:
+
+| Model | Service | Purpose |
+|-------|---------|---------|
+| Credit Risk Scoring | Finance/Identity | Classify customer payment risk (Low/Medium/High/Critical) |
+| Cash Flow Forecasting | Finance | Predict future cash inflows/outflows using time series |
+| Lead Scoring | Sales | Prioritize leads by conversion probability (0-99 score) |
+| Project Delay Prediction | Project | Predict probability of project delays |
+| Predictive Maintenance | Inventory/Compliance | Forecast equipment failures before they occur |
+| Demand Forecasting | Inventory | Optimize reorder points and quantities |
+
+**API Endpoints (Monolith):**
+- `GET /api/v1/ai/health/` - AI service health check
+- `GET /api/v1/ai/credit-risk/predict/{customer_id}/` - Credit risk prediction
+- `GET /api/v1/ai/leads/score/{lead_id}/` - Lead scoring
+- `GET /api/v1/ai/projects/delay-risk/{project_id}/` - Project delay prediction
+- `GET /api/v1/ai/equipment/maintenance-risk/{equipment_id}/` - Maintenance prediction
+- `GET /api/v1/ai/inventory/demand-forecast/{product_id}/` - Demand forecasting
+- `POST /api/v1/ai/cashflow/forecast/` - Cash flow forecasting
 
 ## Features
 

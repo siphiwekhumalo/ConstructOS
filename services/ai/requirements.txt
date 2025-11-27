@@ -1,0 +1,24 @@
+# AI Service Dependencies
+fastapi>=0.115.0
+uvicorn[standard]>=0.34.0
+pydantic>=2.10.0
+python-dotenv>=1.2.1
+
+# ML Libraries
+scikit-learn>=1.6.0
+pandas>=2.2.0
+numpy>=2.0.0
+joblib>=1.4.0
+
+# Database
+psycopg2-binary>=2.9.11
+sqlalchemy>=2.0.0
+
+# HTTP Client for cross-service calls
+httpx>=0.28.0
+
+# Redis for caching predictions
+redis>=5.0.0
+
+# Prophet for time series (optional - heavy dependency)
+# prophet>=1.1.5

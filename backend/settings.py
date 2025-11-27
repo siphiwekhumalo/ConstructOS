@@ -30,6 +30,7 @@ INSTALLED_APPS = [
     'backend.apps.crm',
     'backend.apps.erp',
     'backend.apps.construction',
+    'backend.apps.ai',
 ]
 
 MIDDLEWARE = [

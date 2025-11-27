@@ -47,6 +47,7 @@ services:
       COMPLIANCE_SERVICE_URL: http://compliance:8006
       PROJECT_SERVICE_URL: http://project:8007
       DOCUMENT_SERVICE_URL: http://document:8008
+      AI_SERVICE_URL: http://ai:8009
     depends_on:
       - identity
       - sales
@@ -56,6 +57,7 @@ services:
       - compliance
       - project
       - document
+      - ai
 
   # Identity/Contact Service
   identity:
@@ -227,6 +229,30 @@ services:
       DOCUMENT_DB_HOST: postgres
       DOCUMENT_DB_PORT: 5432
       REDIS_URL: redis://redis:6379/7
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # AI/ML Service (FastAPI)
+  ai:
+    build:
+      context: ./ai
+      dockerfile: Dockerfile
+    ports:
+      - "8009:8009"
+    environment:
+      AI_SERVICE_PORT: 8009
+      DATABASE_URL: postgresql://constructos:constructos_dev@postgres:5432/ai_db
+      REDIS_URL: redis://redis:6379/8
+      IDENTITY_SERVICE_URL: http://identity:8001
+      SALES_SERVICE_URL: http://sales:8002
+      FINANCE_SERVICE_URL: http://finance:8003
+      INVENTORY_SERVICE_URL: http://inventory:8004
+      HR_SERVICE_URL: http://hr:8005
+      COMPLIANCE_SERVICE_URL: http://compliance:8006
+      PROJECT_SERVICE_URL: http://project:8007
     depends_on:
       postgres:
         condition: service_healthy

@@ -27,6 +27,7 @@ const SERVICES = {
   compliance: process.env.COMPLIANCE_SERVICE_URL || 'http://localhost:8006',
   project: process.env.PROJECT_SERVICE_URL || 'http://localhost:8007',
   document: process.env.DOCUMENT_SERVICE_URL || 'http://localhost:8008',
+  ai: process.env.AI_SERVICE_URL || 'http://localhost:8009',
 };
 
 // Route mappings to services
@@ -77,6 +78,9 @@ const ROUTE_MAPPINGS: { [key: string]: string } = {
   // Document Service routes
   '/api/v1/documents': 'document',
   '/api/v1/files': 'document',
+  
+  // AI Service routes
+  '/api/v1/ai': 'ai',
 };
 
 // Middleware

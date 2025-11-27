@@ -9,6 +9,7 @@ CREATE DATABASE hr_db;
 CREATE DATABASE compliance_db;
 CREATE DATABASE project_db;
 CREATE DATABASE document_db;
+CREATE DATABASE ai_db;
 
 -- Grant privileges to the constructos user
 GRANT ALL PRIVILEGES ON DATABASE identity_db TO constructos;
@@ -19,3 +20,4 @@ GRANT ALL PRIVILEGES ON DATABASE hr_db TO constructos;
 GRANT ALL PRIVILEGES ON DATABASE compliance_db TO constructos;
 GRANT ALL PRIVILEGES ON DATABASE project_db TO constructos;
 GRANT ALL PRIVILEGES ON DATABASE document_db TO constructos;
+GRANT ALL PRIVILEGES ON DATABASE ai_db TO constructos;
