@@ -17,7 +17,8 @@ import {
   RefreshCw,
   CheckCircle2,
   Clock,
-  Zap
+  Zap,
+  DollarSign
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
