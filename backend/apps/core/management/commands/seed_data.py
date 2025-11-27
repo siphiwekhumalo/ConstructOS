@@ -162,11 +162,20 @@ class Command(BaseCommand):
         departments = ['IT', 'Executive', 'Operations', 'Finance', 'Logistics', 'Sales', 'Safety', 'HR']
         
         for i, data in enumerate(base_users):
-            user = User.objects.create(
-                id=USER_UUIDS[i],
-                password=make_password('password123'),
-                **data
-            )
+            existing_user = User.objects.filter(username=data['username']).first() or User.objects.filter(email=data['email']).first()
+            if existing_user:
+                for key, value in data.items():
+                    setattr(existing_user, key, value)
+                existing_user.set_password('password123')
+                existing_user.save()
+                user = existing_user
+            else:
+                user = User.objects.create(
+                    id=USER_UUIDS[i],
+                    **data
+                )
+                user.set_password('password123')
+                user.save()
             users.append(user)
         
         extra_users = 2 * self.volume_multiplier
@@ -175,16 +184,26 @@ class Command(BaseCommand):
             first = random.choice(SA_FIRST_NAMES)
             last = random.choice(SA_LAST_NAMES)
             last_clean = last.replace(" ", "").replace("'", "").lower()
-            user = User.objects.create(
-                id=USER_UUIDS[idx] if idx < len(USER_UUIDS) else str(uuid.uuid4()),
-                username=f"{first[0].lower()}{last_clean}{i}",
-                email=f"{first.lower()}.{last_clean}{i}@constructos.co.za",
-                first_name=first,
-                last_name=last,
-                role=random.choice(roles),
-                department=random.choice(departments),
-                password=make_password('password123'),
-            )
+            username = f"{first[0].lower()}{last_clean}{i}"
+            existing_user = User.objects.filter(username=username).first()
+            if existing_user:
+                existing_user.first_name = first
+                existing_user.last_name = last
+                existing_user.set_password('password123')
+                existing_user.save()
+                user = existing_user
+            else:
+                user = User.objects.create(
+                    id=USER_UUIDS[idx] if idx < len(USER_UUIDS) else str(uuid.uuid4()),
+                    username=username,
+                    email=f"{first.lower()}.{last_clean}{i}@constructos.co.za",
+                    first_name=first,
+                    last_name=last,
+                    role=random.choice(roles),
+                    department=random.choice(departments),
+                )
+                user.set_password('password123')
+                user.save()
             users.append(user)
         
         return users
