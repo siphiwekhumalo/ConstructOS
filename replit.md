@@ -53,11 +53,55 @@ Preferred communication style: Simple, everyday language.
 
 ### Authentication & Authorization
 
-Role-Based Access Control (RBAC) using Microsoft Entra ID (Azure AD) for SSO.
+Role-Based Access Control (RBAC) using Microsoft Entra ID (Azure AD) for SSO and credential-based authentication.
 
-**User Roles:** `admin`, `finance`, `hr`, `operations`, `site_manager`, `executive`.
+**User Roles (11 total):** `system_admin`, `executive`, `finance_manager`, `hr_specialist`, `sales_rep`, `operations_specialist`, `site_manager`, `warehouse_clerk`, `field_worker`, `subcontractor`, `client`.
 
 **Configuration:** Requires Azure AD Tenant ID and Client ID for both backend and frontend. App roles defined in Azure AD manifest for permission mapping.
+
+### Enterprise Security Features
+
+**Token Blacklisting:**
+- Redis-based JWT token blacklist for secure logout
+- Session token invalidation on logout
+- Force logout capability for administrators (`/api/v1/security/force-logout/`)
+- Token version tracking for bulk invalidation
+
+**Brute Force Protection:**
+- Account lockout after 5 failed login attempts
+- 15-minute lockout window
+- Failed attempt tracking with Redis
+- Automatic unlock after lockout period
+
+**Rate Limiting:**
+- Per-IP rate limiting on authentication endpoints (10 requests/minute)
+- Configurable limits per endpoint
+- Rate limit headers in responses (X-RateLimit-Remaining)
+
+**Security Logging & Monitoring:**
+- Centralized security event logging via Redis
+- Event types: LOGIN_SUCCESS, LOGIN_FAILED, LOGOUT, TOKEN_BLACKLISTED, PERMISSION_DENIED, RATE_LIMIT_EXCEEDED, BRUTE_FORCE_DETECTED, ANOMALY_DETECTED, DATA_MODIFIED, DATA_DELETED, SENSITIVE_ACCESS, AFTER_HOURS_ACCESS
+- Security dashboard API (`/api/v1/security/dashboard/`) for administrators
+- Security events API (`/api/v1/security/events/`) with filtering
+
+**Input Validation & XSS Prevention:**
+- Security middleware for XSS pattern detection
+- SQL injection pattern detection
+- HTML entity encoding for dangerous characters
+- Request body sanitization
+- Query parameter validation
+
+**Anomaly Detection:**
+- After-hours access detection (outside 6 AM - 10 PM)
+- API call volume spike detection
+- User behavior tracking for pattern analysis
+
+**Security Headers:**
+- X-Content-Type-Options: nosniff
+- X-Frame-Options: DENY
+- X-XSS-Protection: 1; mode=block
+- Referrer-Policy: strict-origin-when-cross-origin
+- Strict-Transport-Security (on HTTPS)
 
 ### Navigation and Interface Features
 

@@ -1,6 +1,12 @@
 """
 Authentication views for ConstructOS.
 Provides login, logout, and demo user management.
+
+Security features:
+- Brute-force protection with account lockout
+- Rate limiting on authentication endpoints
+- Security event logging
+- Session token blacklisting on logout
 """
 import uuid
 from datetime import datetime, timezone
@@ -11,6 +17,16 @@ from django.contrib.auth.hashers import check_password
 
 from .models import User
 from .permissions import get_user_permissions
+from .security import (
+    TokenBlacklist,
+    SecurityLogger,
+    SecurityEventType,
+    BruteForceProtection,
+    RateLimiter,
+    AnomalyDetector,
+    get_client_ip,
+    get_user_agent,
+)
 
 
 DEMO_USERS = [
@@ -167,14 +183,44 @@ def login_view(request):
     """
     Authenticate user with username/email and password.
     Returns user info and session token.
+    
+    Security features:
+    - Rate limiting (5 attempts per 15 minutes)
+    - Brute-force protection with account lockout
+    - Security event logging
+    - Anomaly detection for after-hours access
     """
+    ip_address = get_client_ip(request)
+    user_agent = get_user_agent(request)
     username = request.data.get('username', '').strip()
     password = request.data.get('password', '').strip()
+    
+    allowed, remaining = RateLimiter.check_rate_limit(
+        identifier=ip_address,
+        endpoint='auth/login',
+        max_requests=10,
+        window_seconds=60
+    )
+    if not allowed:
+        return Response(
+            {'error': 'Too many login attempts. Please try again later.'},
+            status=status.HTTP_429_TOO_MANY_REQUESTS
+        )
     
     if not username or not password:
         return Response(
             {'error': 'Username and password are required'},
             status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    is_locked, lockout_remaining = BruteForceProtection.is_locked(username)
+    if is_locked:
+        return Response(
+            {
+                'error': 'Account temporarily locked due to too many failed attempts.',
+                'lockout_seconds': lockout_remaining
+            },
+            status=status.HTTP_423_LOCKED
         )
     
     try:
@@ -183,22 +229,40 @@ def login_view(request):
         else:
             user = User.objects.get(username=username)
     except User.DoesNotExist:
+        BruteForceProtection.record_failed_attempt(username, ip_address)
         return Response(
             {'error': 'Invalid username or password'},
             status=status.HTTP_401_UNAUTHORIZED
         )
     
     if not user.is_active:
+        SecurityLogger.log(
+            SecurityEventType.LOGIN_FAILED,
+            user_id=str(user.id),
+            ip_address=ip_address,
+            user_agent=user_agent,
+            endpoint='/api/v1/auth/login/',
+            method='POST',
+            status_code=401,
+            details={'reason': 'account_disabled'},
+            severity='WARNING'
+        )
         return Response(
             {'error': 'Account is disabled'},
             status=status.HTTP_401_UNAUTHORIZED
         )
     
     if not user.check_password(password):
+        attempts, is_now_locked = BruteForceProtection.record_failed_attempt(username, ip_address)
+        error_msg = 'Invalid username or password'
+        if is_now_locked:
+            error_msg = 'Account locked due to too many failed attempts. Try again in 15 minutes.'
         return Response(
-            {'error': 'Invalid username or password'},
+            {'error': error_msg},
             status=status.HTTP_401_UNAUTHORIZED
         )
+    
+    BruteForceProtection.clear_attempts(username)
     
     user.last_login = datetime.now(timezone.utc)
     user.save(update_fields=['last_login'])
@@ -209,6 +273,20 @@ def login_view(request):
     request.session['session_token'] = session_token
     
     permissions = get_user_permissions(user)
+    
+    AnomalyDetector.check_after_hours_access(str(user.id), ip_address)
+    
+    SecurityLogger.log(
+        SecurityEventType.LOGIN_SUCCESS,
+        user_id=str(user.id),
+        ip_address=ip_address,
+        user_agent=user_agent,
+        endpoint='/api/v1/auth/login/',
+        method='POST',
+        status_code=200,
+        details={'role': user.role, 'user_type': user.user_type},
+        severity='INFO'
+    )
     
     return Response({
         'user': {
@@ -233,7 +311,31 @@ def login_view(request):
 
 @api_view(['POST'])
 def logout_view(request):
-    """Log out the current user and clear session."""
+    """
+    Log out the current user and clear session.
+    
+    Security features:
+    - Blacklists the session token
+    - Logs the logout event
+    - Clears all session data
+    """
+    ip_address = get_client_ip(request)
+    user_id = request.session.get('user_id')
+    session_token = request.session.get('session_token')
+    
+    if session_token:
+        TokenBlacklist.blacklist_token(session_token, user_id, reason='logout')
+    
+    SecurityLogger.log(
+        SecurityEventType.LOGOUT,
+        user_id=user_id,
+        ip_address=ip_address,
+        endpoint='/api/v1/auth/logout/',
+        method='POST',
+        status_code=200,
+        severity='INFO'
+    )
+    
     request.session.flush()
     return Response({'message': 'Logged out successfully'})
 

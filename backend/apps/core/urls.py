@@ -2,7 +2,8 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
     UserViewSet, EventViewSet, AuditLogViewSet, UnifiedSearchView, 
-    FavoriteViewSet, AuthMeView, HealthCheckView, CacheStatsView
+    FavoriteViewSet, AuthMeView, HealthCheckView, CacheStatsView,
+    SecurityEventsView, SecurityDashboardView, ForceLogoutView,
 )
 from .auth_views import (
     login_view, logout_view, current_user_view,
@@ -26,5 +27,8 @@ urlpatterns = [
     path('health/liveness/', HealthCheckView.as_view(), {'check_type': 'liveness'}, name='health-liveness'),
     path('health/readiness/', HealthCheckView.as_view(), {'check_type': 'readiness'}, name='health-readiness'),
     path('cache/stats/', CacheStatsView.as_view(), name='cache-stats'),
+    path('security/events/', SecurityEventsView.as_view(), name='security-events'),
+    path('security/dashboard/', SecurityDashboardView.as_view(), name='security-dashboard'),
+    path('security/force-logout/', ForceLogoutView.as_view(), name='security-force-logout'),
     path('', include(router.urls)),
 ]

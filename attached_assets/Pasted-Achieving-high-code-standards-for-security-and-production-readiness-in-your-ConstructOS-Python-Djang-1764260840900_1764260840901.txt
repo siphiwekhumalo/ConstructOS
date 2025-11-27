@@ -1,0 +1,77 @@
+Achieving high code standards for security and production readiness in your ConstructOS Python/Django microservices requires adhering to two distinct but overlapping disciplines: Clean Code/Software Engineering Principles and Secure Coding Practices (DevSecOps).
+
+Here are the essential features and tools needed to enforce both across your platform's codebase.
+
+🔒 1. Secure Coding Practices (Security Standards)
+Since your platform handles sensitive financial and operational data, robust security is non-negotiable.
+
+A. Data Validation and Trust Boundaries
+Never Trust the Client: This is the golden rule. Validate and Sanitize all data (query parameters, JSON body, headers) on the server side (in your Django Serializers and Views), even if the frontend already validates it.
+
+Tool: Django's Forms/Serializers for built-in validation. Use Python's re module or custom validators for complex business logic checks.
+
+Prevent Injection: Utilize the Django ORM exclusively for database queries. Avoid using raw SQL (cursor.execute(), raw(), extra()) with user input, as this opens the door to SQL Injection.
+
+Mass Assignment Protection: Ensure your Django REST Framework (DRF) Serializers explicitly define the fields that can be updated (fields or exclude in Meta class). Never use serializer.save(request.data) blindly, as this allows an attacker to update fields they shouldn't (e.g., changing is_admin=False to True).
+
+B. Django/DRF Configuration Hardening
+Disable Debug in Production: The DEBUG = False setting is critical to prevent attackers from gaining sensitive configuration and traceback information.
+
+Authentication and Permissions:
+
+Set DEFAULT_AUTHENTICATION_CLASSES to your token-based scheme (e.g., JWT-backed class).
+
+Use DEFAULT_PERMISSION_CLASSES (e.g., IsAuthenticated) globally and override with specific Role-Based Access Control (RBAC) checks at the view level (IsSiteManager, IsFinanceUser).
+
+Security Middleware: Ensure the following Django settings are configured correctly to leverage built-in protections:
+
+SECURE_HSTS_SECONDS (HTTP Strict Transport Security)
+
+SECURE_SSL_REDIRECT = True (Forces all HTTP traffic to HTTPS)
+
+SESSION_COOKIE_SECURE = True and CSRF_COOKIE_SECURE = True (Ensures cookies are only sent over HTTPS).
+
+C. Automated Security Scanning (SAST)
+Static Application Security Testing (SAST): Integrate a dedicated security linter into your CI/CD pipeline.
+
+Tool: Bandit (specifically for Python code) or Semgrep. These tools scan your code for common security vulnerabilities (e.g., using yaml.load instead of yaml.safe_load, using unsafe cryptography functions). The CI pipeline must fail on high-severity findings.
+
+📝 2. Clean Code and Production Readiness Standards
+High-quality code is inherently more reliable, maintainable, and easier to secure. These standards ensure your microservices are ready for global deployment and fast iteration.
+
+A. Architectural Principles
+Single Responsibility Principle (SRP): Every function, class, and microservice should have only one reason to change. This reduces complexity and simplifies unit testing.
+
+Example: Business logic for calculating COGS should not live inside the DRF View class; it belongs in a separate service or utility module (e.g., finance.calculations.CogsCalculator).
+
+Decoupling and Modularization: Use Domain/Layered Architecture within each Django microservice. Separate code into:
+
+api: (Views, Serializers) - Handles HTTP requests/responses.
+
+domain/models: (Database logic) - Handles ORM interaction.
+
+services: (Business logic) - The "brain" of the application where core rules live.
+
+B. Style and Consistency
+PEP 8 Compliance: All Python code must strictly follow PEP 8 style guide (e.g., 4 spaces for indentation, variable naming conventions).
+
+Tool: Flake8 (Linter for style and errors) or Ruff (Extremely fast, modern Python linter/formatter).
+
+Automated Formatting: Use an unyielding auto-formatter to ensure 100% style consistency, removing all style arguments during code review.
+
+Tool: Black (Python code formatter).
+
+Type Hinting: Use type hints (def calculate(amount: float) -> float:) everywhere to improve readability, catch type errors early, and aid developer tooling.
+
+Tool: MyPy (Static type checker) integrated into your CI.
+
+C. Testing and Observability
+High Test Coverage: Aim for high unit test coverage (e.g., 90%+ of core business logic) using Pytest and factory_boy for mock data. Focus especially on covering all paths of your RBAC and validation logic.
+
+Centralized Logging: Use Python's built-in logging module configured to output structured JSON logs (e.g., using python-json-logger). This is essential for your global production environment to ensure all logs from your Kubernetes pods can be easily ingested and searched by your centralized logging system.
+
+Complexity Metrics: Track complexity to identify areas that are difficult to maintain and test.
+
+Tool: Radon or similar tools to calculate Cyclomatic Complexity. Functions with a score above 10 should be flagged for refactoring.
+
+By integrating these practices and tools into your git pre-commit hooks and your CI/CD pipeline, you ensure that only high-quality, secure code ever makes it to production.
