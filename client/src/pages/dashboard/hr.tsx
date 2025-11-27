@@ -9,12 +9,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { 
-  Users, UserPlus, Calendar, DollarSign, Search, Plus, 
+  Users, UserPlus, Calendar, Banknote, Search, Plus, 
   Clock, CheckCircle, XCircle, FileText, Building 
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getEmployees, getLeaveRequests, getPayrollRecords, createEmployee } from "@/lib/api";
 import { useState } from "react";
+import { formatCurrency } from "@/lib/currency";
 
 export default function DashboardHR() {
   const queryClient = useQueryClient();
@@ -268,9 +269,9 @@ export default function DashboardHR() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Monthly Payroll</p>
-                  <p className="text-2xl font-bold font-display" data-testid="stat-payroll">${totalPayroll.toLocaleString()}</p>
+                  <p className="text-2xl font-bold font-display" data-testid="stat-payroll">{formatCurrency(totalPayroll)}</p>
                 </div>
-                <DollarSign className="h-8 w-8 text-primary opacity-80" />
+                <Banknote className="h-8 w-8 text-primary opacity-80" />
               </div>
             </CardContent>
           </Card>
@@ -285,7 +286,7 @@ export default function DashboardHR() {
               <Calendar className="h-4 w-4" /> Leave Requests
             </TabsTrigger>
             <TabsTrigger value="payroll" className="gap-2" data-testid="tab-payroll">
-              <DollarSign className="h-4 w-4" /> Payroll
+              <Banknote className="h-4 w-4" /> Payroll
             </TabsTrigger>
           </TabsList>
 
@@ -388,7 +389,7 @@ export default function DashboardHR() {
                           <p className="text-sm text-muted-foreground capitalize">{record.status}</p>
                         </div>
                         <div className="text-right">
-                          <p className="font-medium">${parseFloat(record.netPay || "0").toLocaleString()}</p>
+                          <p className="font-medium">{formatCurrency(record.netPay || "0")}</p>
                           <p className="text-xs text-muted-foreground">Net Pay</p>
                         </div>
                       </div>

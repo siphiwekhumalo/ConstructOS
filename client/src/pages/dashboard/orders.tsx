@@ -8,12 +8,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { 
-  ShoppingCart, Package, TrendingUp, DollarSign, Search, Plus, 
+  ShoppingCart, Package, TrendingUp, Banknote, Search, Plus, 
   ArrowUpRight, ArrowDownLeft, Clock, CheckCircle, Truck
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getSalesOrders, getPurchaseOrders, getAccounts, createSalesOrder, createPurchaseOrder } from "@/lib/api";
 import { useState } from "react";
+import { formatCurrency } from "@/lib/currency";
 
 export default function DashboardOrders() {
   const queryClient = useQueryClient();
@@ -24,14 +25,14 @@ export default function DashboardOrders() {
   const [newSalesOrder, setNewSalesOrder] = useState({
     accountId: "",
     totalAmount: "",
-    currency: "USD",
+    currency: "ZAR",
     notes: "",
   });
 
   const [newPurchaseOrder, setNewPurchaseOrder] = useState({
     supplierId: "",
     totalAmount: "",
-    currency: "USD",
+    currency: "ZAR",
     notes: "",
   });
 
@@ -55,7 +56,7 @@ export default function DashboardOrders() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["salesOrders"] });
       setIsSalesDialogOpen(false);
-      setNewSalesOrder({ accountId: "", totalAmount: "", currency: "USD", notes: "" });
+      setNewSalesOrder({ accountId: "", totalAmount: "", currency: "ZAR", notes: "" });
     },
   });
 
@@ -64,7 +65,7 @@ export default function DashboardOrders() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["purchaseOrders"] });
       setIsPurchaseDialogOpen(false);
-      setNewPurchaseOrder({ supplierId: "", totalAmount: "", currency: "USD", notes: "" });
+      setNewPurchaseOrder({ supplierId: "", totalAmount: "", currency: "ZAR", notes: "" });
     },
   });
 
@@ -149,9 +150,9 @@ export default function DashboardOrders() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
+                          <SelectItem value="ZAR">ZAR</SelectItem>
                           <SelectItem value="USD">USD</SelectItem>
                           <SelectItem value="EUR">EUR</SelectItem>
-                          <SelectItem value="GBP">GBP</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -203,7 +204,7 @@ export default function DashboardOrders() {
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label>Total Amount</Label>
+                      <Label>Total Amount (R)</Label>
                       <Input
                         placeholder="5000"
                         value={newPurchaseOrder.totalAmount}
@@ -219,9 +220,9 @@ export default function DashboardOrders() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
+                          <SelectItem value="ZAR">ZAR</SelectItem>
                           <SelectItem value="USD">USD</SelectItem>
                           <SelectItem value="EUR">EUR</SelectItem>
-                          <SelectItem value="GBP">GBP</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -257,7 +258,7 @@ export default function DashboardOrders() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Sales Value</p>
-                  <p className="text-2xl font-bold font-display text-green-500" data-testid="stat-sales-value">${totalSalesValue.toLocaleString()}</p>
+                  <p className="text-2xl font-bold font-display text-green-500" data-testid="stat-sales-value">{formatCurrency(totalSalesValue)}</p>
                 </div>
                 <TrendingUp className="h-8 w-8 text-green-500 opacity-80" />
               </div>
@@ -330,8 +331,8 @@ export default function DashboardOrders() {
                           </p>
                         </div>
                         <div className="text-right">
-                          <p className="font-medium">${parseFloat(order.totalAmount || "0").toLocaleString()}</p>
-                          <p className="text-xs text-muted-foreground">{order.currency}</p>
+                          <p className="font-medium">{formatCurrency(order.totalAmount || "0")}</p>
+                          <p className="text-xs text-muted-foreground">ZAR</p>
                         </div>
                         <Badge className={getStatusBadge(order.status || "pending")}>
                           {order.status || "pending"}
@@ -363,8 +364,8 @@ export default function DashboardOrders() {
                           </p>
                         </div>
                         <div className="text-right">
-                          <p className="font-medium">${parseFloat(order.totalAmount || "0").toLocaleString()}</p>
-                          <p className="text-xs text-muted-foreground">{order.currency}</p>
+                          <p className="font-medium">{formatCurrency(order.totalAmount || "0")}</p>
+                          <p className="text-xs text-muted-foreground">ZAR</p>
                         </div>
                         <Badge className={getStatusBadge(order.status || "draft")}>
                           {order.status || "draft"}

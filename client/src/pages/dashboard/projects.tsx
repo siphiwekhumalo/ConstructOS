@@ -1,6 +1,7 @@
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { 
   Table, 
   TableBody, 
@@ -9,9 +10,20 @@ import {
   TableHeader, 
   TableRow 
 } from "@/components/ui/table";
-import { Plus, Search, Filter, MoreHorizontal, Calendar } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
-import { getProjects } from "@/lib/api";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Plus, Search, Filter, MoreHorizontal, Calendar, X, MapPin, Users, Phone, Mail, Building, Clock, Banknote, Eye, Edit, Trash2, CheckCircle } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { getProjects, createProject, updateProject, deleteProject, getClients } from "@/lib/api";
+import { useState, useMemo } from "react";
+import { format } from "date-fns";
+import { formatCurrency } from "@/lib/currency";
 
 export default function DashboardProjects() {
   const { data: projects, isLoading } = useQuery({
