@@ -9,6 +9,7 @@ import { useMsal, useIsAuthenticated } from "@azure/msal-react";
 import { InteractionStatus, AccountInfo } from "@azure/msal-browser";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { isAzureADConfigured, loginRequest, type AuthState, type UserInfo } from "../lib/msal-config";
+import { setAuthToken } from "../lib/api";
 
 const API_BASE = "/api/v1";
 
@@ -58,6 +59,7 @@ export function useAuth() {
   
   const acquireToken = useCallback(async () => {
     if (!isAzureADConfigured || !account) {
+      setAuthToken(null);
       return null;
     }
     
@@ -67,14 +69,17 @@ export function useAuth() {
         account,
       });
       setAccessToken(response.accessToken);
+      setAuthToken(response.accessToken);
       return response.accessToken;
     } catch (error) {
       try {
         const response = await instance.acquireTokenPopup(loginRequest);
         setAccessToken(response.accessToken);
+        setAuthToken(response.accessToken);
         return response.accessToken;
       } catch (popupError) {
         console.error("Failed to acquire token:", popupError);
+        setAuthToken(null);
         return null;
       }
     }
@@ -115,6 +120,7 @@ export function useAuth() {
   const logout = useCallback(async () => {
     if (!isAzureADConfigured) {
       setAccessToken(null);
+      setAuthToken(null);
       queryClient.clear();
       return;
     }
@@ -122,6 +128,7 @@ export function useAuth() {
     try {
       await instance.logoutPopup();
       setAccessToken(null);
+      setAuthToken(null);
       queryClient.clear();
     } catch (error) {
       console.error("Logout failed:", error);
