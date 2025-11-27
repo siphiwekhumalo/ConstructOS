@@ -2,7 +2,7 @@
 
 ## Overview
 
-ConstructOS is a comprehensive construction management system built with Python, Django, TypeScript, and React. The application provides a full-stack solution for managing construction projects, equipment, safety inspections, finances, documents, and client relationships. It leverages modern web technologies including shadcn/ui components, Tailwind CSS, and a PostgreSQL database via Drizzle ORM.
+ConstructOS is a comprehensive construction management system built with Python, Django, TypeScript, and React. The application provides a full-stack solution for managing construction projects, equipment, safety inspections, finances, documents, and client relationships. It leverages modern web technologies including shadcn/ui components, Tailwind CSS, and a PostgreSQL database.
 
 The platform is designed to modernize construction workflows with features spanning project planning, equipment tracking, safety compliance, IoT monitoring, CRM capabilities, and analytics reporting.
 
@@ -31,70 +31,88 @@ Preferred communication style: Simple, everyday language.
 ### Backend Architecture
 
 **Technology Stack:**
-- Node.js with Express.js framework
-- TypeScript for type safety across the stack
-- Drizzle ORM for database operations
-- Separate development and production server configurations
+- Python 3.11 with Django 5.2
+- Django REST Framework for API development
+- Express.js as API gateway/proxy (port 5000)
+- Django development server (port 8000)
 
 **Design Decisions:**
-- **API Structure**: RESTful API design with routes organized in `/api` namespace. All routes defined in `server/routes.ts`.
-- **Request Logging**: Custom middleware logs API requests with timing, method, path, status code, and response data (truncated for readability).
-- **Development vs Production**: Separate entry points (`index-dev.ts` and `index-prod.ts`) allow for different behavior. Development mode integrates Vite middleware for HMR, while production serves static files.
-- **Database Seeding**: Automatic seeding in development environment to provide sample data for testing.
+- **API Structure**: RESTful API design with versioned `/api/v1` endpoints. Django handles all business logic and database operations.
+- **Proxy Architecture**: Express serves as an API gateway, proxying `/api/v1/*` requests to Django while serving the React frontend via Vite.
+- **Development Setup**: Express spawns Django as a child process for unified development workflow. Both servers start with a single `npm run dev` command.
+- **Request Logging**: Custom middleware logs API requests with timing, method, path, and status codes.
+
+### Django App Structure
+
+**Apps:**
+- **core**: User authentication, events, and audit logging
+- **crm**: Accounts, contacts, leads, opportunities, campaigns, tickets, and SLAs
+- **erp**: Warehouses, products, inventory, invoices, payments, payroll, and HR
+- **construction**: Projects, transactions, equipment, safety inspections, and documents
+
+**API Endpoints (all under /api/v1/):**
+- Users, Events, Audit Logs (core)
+- Accounts, Contacts, Addresses, Leads, Opportunities, Campaigns, Tickets (crm)
+- Warehouses, Products, Stock, Invoices, Payments, Employees, Payroll (erp)
+- Projects, Equipment, Transactions, Safety Inspections, Documents (construction)
 
 ### Data Storage
 
 **Database:**
-- PostgreSQL via Neon serverless
-- Drizzle ORM for type-safe database queries and migrations
-- WebSocket support for serverless database connections
+- PostgreSQL via DATABASE_URL environment variable
+- Django ORM for database operations
+- Django migrations for schema management
 
 **Schema Design:**
-- **Users**: Authentication table with username/password
-- **Projects**: Core entity tracking project name, location, status, progress, budget, and due dates
+- **Users**: Authentication table with username/password and role-based access
+- **Projects**: Core entity tracking name, location, status, progress, budget, and due dates
 - **Transactions**: Financial records linked to projects
-- **Equipment**: Inventory management for tools and materials
-- **Safety Inspections**: Compliance tracking with inspection records
-- **Clients**: CRM data for customer management
-- **Documents**: File metadata and references
+- **Equipment**: Inventory management with warehouse and employee assignment
+- **Safety Inspections**: Compliance tracking with findings and corrective actions
+- **Clients**: CRM data linked to accounts
+- **Documents**: File metadata with versioning
 
 **Design Decisions:**
-- **UUID Primary Keys**: Uses `gen_random_uuid()` for most tables to avoid sequential ID enumeration attacks
-- **Text Fields for Dates**: Due dates stored as text for flexibility (may need revision for date queries)
-- **Decimal for Currency**: Uses `decimal(12, 2)` for precise financial calculations
-- **Timestamps**: Automatic `createdAt` timestamps for audit trails
-- **Foreign Keys**: Projects referenced by transactions for data integrity
+- **UUID Primary Keys**: Uses `uuid.uuid4()` for most tables
+- **Decimal for Currency**: Uses `DecimalField` with appropriate precision
+- **Timestamps**: Automatic `created_at` and `updated_at` fields
+- **Foreign Keys**: Proper relationships between models with SET_NULL on delete
 
 ### Authentication & Authorization
 
-Currently implements basic user schema with username/password fields. No session management or JWT implementation visible in the codebase yet. The `connect-pg-simple` dependency suggests intent for PostgreSQL-backed session storage.
-
-**Future Consideration**: Authentication appears to be planned but not fully implemented.
+Currently implements basic user schema with username/password fields. Django REST Framework provides token authentication capabilities.
 
 ### External Dependencies
 
 **Third-Party Services:**
-- **Neon Database**: Serverless PostgreSQL hosting with WebSocket support for edge environments
-- **Replit Infrastructure**: Custom Vite plugins for Replit deployment (`@replit/vite-plugin-cartographer`, `@replit/vite-plugin-dev-banner`, `@replit/vite-plugin-runtime-error-modal`)
+- **PostgreSQL Database**: Database connection via DATABASE_URL
+- **Replit Infrastructure**: Custom Vite plugins for Replit deployment
 
-**Key Libraries:**
+**Key Libraries (Python):**
+- **Django**: Web framework
+- **Django REST Framework**: API toolkit
+- **django-cors-headers**: CORS handling
+- **django-filter**: Queryset filtering
+- **psycopg2-binary**: PostgreSQL adapter
+- **whitenoise**: Static file serving
+
+**Key Libraries (JavaScript/TypeScript):**
 - **React Query**: Server state management with caching
-- **Drizzle ORM**: Type-safe database queries and schema management
-- **Radix UI**: Accessible component primitives (30+ component packages)
+- **http-proxy-middleware**: API proxying to Django
+- **Radix UI**: Accessible component primitives
 - **Tailwind CSS**: Utility-first styling
-- **Zod**: Runtime type validation for API inputs
-- **React Hook Form**: Form state management with validation
-- **Lucide Icons**: Icon library for UI elements
-- **date-fns**: Date manipulation utilities
+- **Zod**: Runtime type validation
+- **React Hook Form**: Form state management
+- **Lucide Icons**: Icon library
 
 **Development Tools:**
-- **TypeScript**: Type checking across frontend and backend
+- **TypeScript**: Type checking for frontend
 - **Vite**: Fast development server with HMR
-- **ESBuild**: Production bundling for server code
-- **Drizzle Kit**: Database migration management
+- **ESBuild**: Production bundling
 
 **Build & Deployment:**
 - Frontend builds to `dist/public` directory
-- Backend bundles to `dist/index.js` using ESBuild
+- Django serves API at port 8000
+- Express gateway at port 5000 proxies to Django
 - Environment variable `DATABASE_URL` required for database connection
-- Supports Replit deployment with custom meta image plugins
+- Run `python manage.py migrate` to set up database schema
