@@ -19,7 +19,8 @@ import {
   Brain,
   MessageSquare,
   ChevronDown,
-  User
+  User,
+  Lock
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -37,6 +38,8 @@ import {
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { hasNavPermission, type NavPermission } from "@/lib/rbac-permissions";
 
 const roleColors: Record<string, string> = {
   system_admin: "bg-red-500/10 text-red-500",
@@ -52,22 +55,95 @@ const roleColors: Record<string, string> = {
   executive: "bg-pink-500/10 text-pink-500",
 };
 
-const navItems = [
-  { label: "Overview", icon: LayoutDashboard, href: "/dashboard" },
-  { label: "Projects", icon: Briefcase, href: "/dashboard/projects" },
-  { label: "Documents", icon: FileText, href: "/dashboard/documents" },
-  { label: "Finance", icon: Wallet, href: "/dashboard/finance" },
-  { label: "Equipment", icon: Truck, href: "/dashboard/equipment" },
-  { label: "Safety", icon: ShieldAlert, href: "/dashboard/safety" },
-  { label: "IoT Monitor", icon: Radio, href: "/dashboard/iot" },
-  { label: "CRM", icon: Users, href: "/dashboard/crm" },
-  { label: "Orders", icon: ShoppingCart, href: "/dashboard/orders" },
-  { label: "HR", icon: UserCog, href: "/dashboard/hr" },
-  { label: "Support", icon: Headphones, href: "/dashboard/support" },
-  { label: "Reports", icon: BarChart3, href: "/dashboard/reports" },
-  { label: "AI Insights", icon: Brain, href: "/dashboard/ai" },
-  { label: "Team Chat", icon: MessageSquare, href: "/dashboard/chat" },
+interface NavItemConfig {
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  href: string;
+  permission: NavPermission;
+}
+
+const navItems: NavItemConfig[] = [
+  { label: "Overview", icon: LayoutDashboard, href: "/dashboard", permission: "dashboard.overview" },
+  { label: "Projects", icon: Briefcase, href: "/dashboard/projects", permission: "dashboard.projects" },
+  { label: "Documents", icon: FileText, href: "/dashboard/documents", permission: "dashboard.documents" },
+  { label: "Finance", icon: Wallet, href: "/dashboard/finance", permission: "dashboard.finance" },
+  { label: "Equipment", icon: Truck, href: "/dashboard/equipment", permission: "dashboard.equipment" },
+  { label: "Safety", icon: ShieldAlert, href: "/dashboard/safety", permission: "dashboard.safety" },
+  { label: "IoT Monitor", icon: Radio, href: "/dashboard/iot", permission: "dashboard.iot" },
+  { label: "CRM", icon: Users, href: "/dashboard/crm", permission: "dashboard.crm" },
+  { label: "Orders", icon: ShoppingCart, href: "/dashboard/orders", permission: "dashboard.orders" },
+  { label: "HR", icon: UserCog, href: "/dashboard/hr", permission: "dashboard.hr" },
+  { label: "Support", icon: Headphones, href: "/dashboard/support", permission: "dashboard.support" },
+  { label: "Reports", icon: BarChart3, href: "/dashboard/reports", permission: "dashboard.reports" },
+  { label: "AI Insights", icon: Brain, href: "/dashboard/ai", permission: "dashboard.ai" },
+  { label: "Team Chat", icon: MessageSquare, href: "/dashboard/chat", permission: "dashboard.chat" },
 ];
+
+interface NavItemProps {
+  item: NavItemConfig;
+  isActive: boolean;
+  hasAccess: boolean;
+  userRole?: string;
+}
+
+function NavItemComponent({ item, isActive, hasAccess, userRole }: NavItemProps) {
+  const content = (
+    <div 
+      className={cn(
+        "flex items-center gap-3 px-4 py-2.5 rounded-sm text-sm font-medium transition-all group relative",
+        hasAccess ? "cursor-pointer" : "cursor-not-allowed",
+        isActive && hasAccess
+          ? "bg-primary/10 text-primary border-l-2 border-primary" 
+          : hasAccess
+            ? "text-muted-foreground hover:bg-secondary hover:text-foreground"
+            : "text-muted-foreground/40 bg-muted/20"
+      )}
+      data-testid={`nav-item-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
+    >
+      <item.icon 
+        className={cn(
+          "h-4 w-4", 
+          isActive && hasAccess 
+            ? "text-primary" 
+            : hasAccess 
+              ? "text-muted-foreground group-hover:text-foreground"
+              : "text-muted-foreground/40"
+        )} 
+      />
+      <span className={cn(
+        hasAccess ? "" : "opacity-50"
+      )}>
+        {item.label}
+      </span>
+      {!hasAccess && (
+        <Lock className="h-3 w-3 ml-auto text-muted-foreground/40" />
+      )}
+    </div>
+  );
+
+  if (!hasAccess) {
+    return (
+      <TooltipProvider delayDuration={300}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div>{content}</div>
+          </TooltipTrigger>
+          <TooltipContent side="right" className="max-w-[200px]">
+            <p className="text-xs">
+              You don't have access to this feature. Contact your administrator if you need access.
+            </p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  }
+
+  return (
+    <Link href={item.href}>
+      {content}
+    </Link>
+  );
+}
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [location, navigate] = useLocation();
@@ -79,13 +155,34 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     navigate('/login');
   };
 
-  const getInitials = (user: typeof user) => {
-    if (!user) return 'U';
-    if (user.first_name && user.last_name) {
-      return `${user.first_name[0]}${user.last_name[0]}`.toUpperCase();
+  const getInitials = (u: typeof user) => {
+    if (!u) return 'U';
+    const firstName = 'first_name' in u ? u.first_name : u.firstName;
+    const lastName = 'last_name' in u ? u.last_name : u.lastName;
+    if (firstName && lastName) {
+      return `${firstName[0]}${lastName[0]}`.toUpperCase();
     }
-    return (user.username?.[0] || 'U').toUpperCase();
+    return (u.username?.[0] || 'U').toUpperCase();
   };
+  
+  const getFullName = (u: typeof user): string => {
+    if (!u) return 'Guest';
+    if ('full_name' in u && u.full_name) return u.full_name;
+    if ('fullName' in u && u.fullName) return u.fullName;
+    return u.username || 'Guest';
+  };
+  
+  const getRoleDisplay = (u: typeof user): string => {
+    if (!u || !u.role) return '';
+    if ('role_display' in u && u.role_display) return String(u.role_display);
+    if ('roleDisplay' in u && u.roleDisplay) return String(u.roleDisplay);
+    return u.role.replace(/_/g, ' ');
+  };
+
+  const userRole = user?.role;
+
+  const accessibleCount = navItems.filter(item => hasNavPermission(userRole, item.permission)).length;
+  const totalCount = navItems.length;
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -107,26 +204,36 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           <span className="font-display font-bold text-lg tracking-tight">ConstructOS</span>
         </div>
 
-        <div className="p-4 space-y-1">
+        <div className="p-4 space-y-1 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 180px)' }}>
+          {userRole && (
+            <div className="px-4 py-2 mb-2">
+              <div className="text-[10px] uppercase tracking-wider text-muted-foreground/60 font-medium">
+                Access Level
+              </div>
+              <div className="text-xs text-muted-foreground mt-0.5">
+                {accessibleCount} of {totalCount} features
+              </div>
+            </div>
+          )}
+          
           {navItems.map((item) => {
-            const isActive = location === item.href;
+            const isActive = location === item.href || 
+              (item.href !== '/dashboard' && location.startsWith(item.href));
+            const hasAccess = hasNavPermission(userRole, item.permission);
+            
             return (
-              <Link key={item.href} href={item.href}>
-                <div className={cn(
-                  "flex items-center gap-3 px-4 py-2.5 rounded-sm text-sm font-medium transition-all cursor-pointer group",
-                  isActive 
-                    ? "bg-primary/10 text-primary border-l-2 border-primary" 
-                    : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-                )}>
-                  <item.icon className={cn("h-4 w-4", isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground")} />
-                  {item.label}
-                </div>
-              </Link>
+              <NavItemComponent
+                key={item.href}
+                item={item}
+                isActive={isActive}
+                hasAccess={hasAccess}
+                userRole={userRole}
+              />
             );
           })}
         </div>
 
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-border">
+        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-border bg-card">
           <Link href="/settings">
              <div className="flex items-center gap-3 px-4 py-2.5 rounded-sm text-sm font-medium text-muted-foreground hover:bg-secondary hover:text-foreground cursor-pointer mb-1">
                <Settings className="h-4 w-4" />
@@ -180,7 +287,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                 >
                   <div className="text-right hidden sm:block">
                     <div className="text-sm font-medium" data-testid="text-user-name">
-                      {user ? (user.full_name || user.username) : 'Guest'}
+                      {getFullName(user)}
                     </div>
                     <div className="text-xs text-muted-foreground" data-testid="text-user-email">
                       {user?.email || 'Not logged in'}
@@ -197,7 +304,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               <DropdownMenuContent align="end" className="w-64">
                 <DropdownMenuLabel>
                   <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium">{user?.full_name || user?.username || 'Guest'}</p>
+                    <p className="text-sm font-medium">{getFullName(user)}</p>
                     <p className="text-xs text-muted-foreground">{user?.email}</p>
                     {user?.role && (
                       <Badge 
@@ -205,8 +312,13 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                         className={cn("w-fit mt-1 text-xs", roleColors[user.role] || "")}
                         data-testid="badge-user-role"
                       >
-                        {user.role_display || user.role.replace(/_/g, ' ')}
+                        {getRoleDisplay(user)}
                       </Badge>
+                    )}
+                    {userRole && (
+                      <p className="text-[10px] text-muted-foreground mt-1">
+                        Access: {accessibleCount}/{totalCount} features
+                      </p>
                     )}
                   </div>
                 </DropdownMenuLabel>
