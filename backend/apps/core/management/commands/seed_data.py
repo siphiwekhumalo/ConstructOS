@@ -31,9 +31,16 @@ from backend.apps.construction.models import (
 )
 
 SEED = 42
-fake = Faker('en_ZA')  # South African locale
+fake = Faker('en_GB')  # English locale (SA data is manually configured)
 Faker.seed(SEED)
 random.seed(SEED)
+
+SA_FIRST_NAMES = ['Thabo', 'Sipho', 'Nomvula', 'Lindiwe', 'Pieter', 'Johan', 'Andile', 'Kagiso', 'Mpho', 'Lerato', 
+                  'Willem', 'Francois', 'Thandiwe', 'Bongani', 'Zanele', 'Mandla', 'Precious', 'Themba', 'Sibongile',
+                  'Annemarie', 'Priya', 'Kobus', 'Hennie', 'Ntombi', 'Busisiwe', 'Dumi', 'Ayanda', 'Lebo', 'Neo', 'Tumi']
+SA_LAST_NAMES = ['Molefe', 'Naidoo', 'Van der Merwe', 'Botha', 'Pretorius', 'Dlamini', 'Mthembu', 'Khumalo', 'Ndlovu', 
+                 'Zulu', 'Swanepoel', 'Coetzee', 'Mokoena', 'Mahlangu', 'Sithole', 'Mabaso', 'Pillay', 'Govender',
+                 'Van Wyk', 'Jansen', 'Kruger', 'Steyn', 'Du Plessis', 'Venter', 'Mkhize', 'Radebe', 'Mbeki', 'Tshabalala']
 
 ACCOUNT_UUIDS = [str(uuid.UUID(int=random.getrandbits(128))) for _ in range(500)]
 CONTACT_UUIDS = [str(uuid.UUID(int=random.getrandbits(128))) for _ in range(2000)]
@@ -165,12 +172,13 @@ class Command(BaseCommand):
         extra_users = 2 * self.volume_multiplier
         for i in range(extra_users):
             idx = len(base_users) + i
-            first = fake.first_name()
-            last = fake.last_name()
+            first = random.choice(SA_FIRST_NAMES)
+            last = random.choice(SA_LAST_NAMES)
+            last_clean = last.replace(" ", "").replace("'", "").lower()
             user = User.objects.create(
                 id=USER_UUIDS[idx] if idx < len(USER_UUIDS) else str(uuid.uuid4()),
-                username=f"{first[0].lower()}{last.lower()}{i}",
-                email=f"{first.lower()}.{last.lower()}{i}@constructos.co.za",
+                username=f"{first[0].lower()}{last_clean}{i}",
+                email=f"{first.lower()}.{last_clean}{i}@constructos.co.za",
                 first_name=first,
                 last_name=last,
                 role=random.choice(roles),
@@ -250,14 +258,15 @@ class Command(BaseCommand):
             clean_domain = ''.join(c for c in account.name if c.isalnum())[:15].lower()
             
             for j in range(num_contacts):
-                first = fake.first_name()
-                last = fake.last_name()
+                first = random.choice(SA_FIRST_NAMES)
+                last = random.choice(SA_LAST_NAMES)
+                last_clean = last.replace(" ", "").replace("'", "").lower()
                 area_code = random.choice(['11', '12', '21', '31', '41', '51'])
                 contact = Contact.objects.create(
                     id=CONTACT_UUIDS[contact_idx] if contact_idx < len(CONTACT_UUIDS) else str(uuid.uuid4()),
                     first_name=first,
                     last_name=last,
-                    email=f"{first.lower()}.{last.lower()}{contact_idx}@{clean_domain}.co.za",
+                    email=f"{first.lower()}.{last_clean}{contact_idx}@{clean_domain}.co.za",
                     phone=f"+27 {area_code} {random.randint(100, 999)} {random.randint(1000, 9999)}",
                     mobile=f"+27 {random.choice(['60', '61', '62', '63', '64', '65', '66', '67', '68', '69', '71', '72', '73', '74', '76', '78', '79', '81', '82', '83', '84'])} {random.randint(100, 999)} {random.randint(1000, 9999)}",
                     title=random.choice(titles),
