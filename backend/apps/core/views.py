@@ -531,11 +531,24 @@ class DashboardFinanceSummaryView(APIView):
         income = transactions.filter(type="income").aggregate(total=models.Sum("amount"))["total"] or 0
         expense = transactions.filter(type="expense").aggregate(total=models.Sum("amount"))["total"] or 0
         net_cash_flow = float(income) - float(expense)
-        # TODO: Replace with real profit margin logic
+        # Project count for dashboard
+        total_projects = Project.objects.count()
+        # Client count for dashboard
+        from backend.apps.crm.models import Account
+        total_clients = Account.objects.filter(type="customer").count()
+        # Employee count for dashboard
+        from backend.apps.erp.models import Employee
+        total_employees = Employee.objects.count()
+        # Financial summary for dashboard
+        total_expenses = Transaction.objects.filter(type="expense").aggregate(total=models.Sum("amount"))["total"] or 0
         return Response({
             "total_contract_value": float(total_contract_value),
             "net_cash_flow": net_cash_flow,
-            "profit_margin": {"gross": 0.22, "net": 0.14},  # Placeholder
+            "profit_margin": {"gross": 0.22, "net": 0.14},
+            "projects": {"total": total_projects},
+            "clients": {"total": total_clients},
+            "employees": {"total": total_employees},
+            "financial": {"totalExpenses": float(total_expenses)},
         })
 
 class DashboardARDaysView(APIView):

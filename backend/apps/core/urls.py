@@ -44,5 +44,6 @@ urlpatterns = [
     path('dashboard/spi-map/', DashboardSPIMapView.as_view(), name='dashboard-spi-map'),
     path('dashboard/resource-utilization/', DashboardResourceUtilizationView.as_view(), name='dashboard-resource-utilization'),
     path('dashboard/project-map/', DashboardProjectMapView.as_view(), name='dashboard-project-map'),
+    path('dashboard/', DashboardFinanceSummaryView.as_view(), name='dashboard'),
     path('', include(router.urls)),
 ]
