@@ -1,0 +1,77 @@
+Financial & Risk Management (Finance & Contact Services)
+These models focus on improving cash flow and reducing bad debt, which is crucial in the high-value construction sector.
+
+Credit Risk Scoring (Contact Service):
+
+Data: Customer demographics, industry, past payment history (balance_due, payment_terms compliance from Finance Service).
+
+ML Model: Classification model (e.g., Logistic Regression or Random Forest).
+
+Output: A risk score (e.g., 0 to 100) or a classification (Low, Medium, High Risk).
+
+Action: When a Sales Rep creates a large quote, the CRM instantly displays the customer's risk score, guiding the decision to accept payment terms or require a larger deposit.
+
+Cash Flow Forecasting (Finance Service):
+
+Data: Historical invoice due dates, actual payment dates, seasonal patterns, and upcoming project milestones.
+
+ML Model: Time series forecasting (e.g., ARIMA or Prophet).
+
+Output: Predicts future cash inflows based on invoice due dates and predicted payment delays.
+
+Action: Provides the Finance team with a more accurate cash flow report than simple averages, enabling better resource planning and management of ZAR liquidity.
+
+2. 📈 Sales and Project Forecasting (Sales Service)
+These models focus on accurate sales predictions and managing pipeline health.
+
+Lead Scoring and Prioritization (Sales Service):
+
+Data: Lead source, industry (construction sub-sector), size of the opportunity, and historical conversion rates for similar leads.
+
+ML Model: Classification model (e.g., Gradient Boosting).
+
+Output: Assigns a score (e.g., 0-99) to each Lead or Opportunity.
+
+Action: Sales Reps prioritize only high-scoring leads, focusing effort where conversion probability is highest, improving sales efficiency.
+
+Project Completion and Delay Prediction:
+
+Data: Historical project data (scheduled vs. actual completion dates), resource utilization, weather data, and the complexity score of the project.
+
+ML Model: Regression or time series model.
+
+Output: Predicts the probability of a project milestone being delayed by more than X days.
+
+Action: Proactive alerts to the Site Manager and Operations Specialist to re-allocate resources before a delay occurs.
+
+3. 📦 Operations and Inventory Optimization (Inventory Service)
+These models are vital for controlling material costs and ensuring necessary items are on site when needed.
+
+Predictive Maintenance (HR/Operations Services):
+
+Data: Usage logs for key equipment (cranes, excavators), inspection dates, and historical failure records (linked to the equipment's UUID).
+
+ML Model: Survival analysis or classification.
+
+Output: Predicts the probability of equipment failure in the next 30 days.
+
+Action: Triggers a Purchase Order (PO) for maintenance parts or schedules a preventative service ticket, minimizing expensive, unplanned downtime on a construction site.
+
+Demand Forecasting (Inventory Service):
+
+Data: Historical material usage per project type, seasonal demand (e.g., more cement in the dry season), and upcoming Sales Orders.
+
+ML Model: Time series forecasting.
+
+Output: Predicts the future demand for key materials (e.g., cement bags, rebar) by Site/Warehouse.
+
+Action: Automatically generates optimized reorder points and suggests Purchase Order quantities for the Procurement team, reducing inventory costs while preventing costly stock-outs.
+
+🤖 AI Integration Strategy
+Dedicated Service: Create a standalone AI_Service (e.g., a FastAPI application for faster serving, or a minimal Django app).
+
+Data Pipeline: Use Celery to send historical or updated data dumps from core services (e.g., daily payment data from Finance) to the AI_Service for model retraining.
+
+Real-Time Prediction: Core services call the AI_Service via a synchronous REST API call when a real-time prediction is needed (e.g., Sales Service calls /ai/predict_risk/{customer_id} when loading a quote).
+
+This isolated approach ensures that the complexity of ML models doesn't affect the stability or performance of your core CRM/ERP transactional databases.
