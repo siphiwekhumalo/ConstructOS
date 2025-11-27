@@ -56,6 +56,98 @@ Preferred communication style: Simple, everyday language.
 - Warehouses, Products, Stock, Invoices, Payments, Employees, Payroll (erp)
 - Projects, Equipment, Transactions, Safety Inspections, Documents (construction)
 
+## CRM-ERP Data Flow Architecture
+
+### The Account Entity: Central Bridge
+
+The **Account** model in the CRM app serves as the master entity bridging CRM and ERP functionality. It is the single source of truth for customer/vendor data.
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    ACCOUNT (Master Entity)                       │
+│  CRM Fields: name, industry, type, status, owner                │
+│  ERP Fields: account_number, tax_id, payment_terms, credit_limit│
+│  Sync Fields: last_synced_at, external_id                       │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+         ┌────────────────────┼────────────────────┐
+         ▼                    ▼                    ▼
+    ┌─────────┐         ┌──────────┐         ┌──────────┐
+    │ Contact │         │  Invoice │         │  Ticket  │
+    │  (CRM)  │         │   (ERP)  │         │  (CRM)   │
+    └─────────┘         └──────────┘         └──────────┘
+         │                    │
+         ▼                    ▼
+    ┌─────────┐         ┌──────────┐
+    │ Address │         │ Payment  │
+    │  (CRM)  │         │   (ERP)  │
+    └─────────┘         └──────────┘
+```
+
+### Data Flow Patterns
+
+#### 1. Lead Conversion Flow (CRM → ERP)
+```
+Lead (CRM) → Contact + Account (CRM) → Customer Master (ERP)
+                                    ↓
+                              Invoice/Payment
+```
+
+#### 2. Order Processing Flow (CRM ↔ ERP)
+```
+Opportunity (CRM) → Sales Order (ERP) → Invoice (ERP) → Payment (ERP)
+                                      ↓
+                              General Ledger Entry
+```
+
+#### 3. Support Flow (CRM ← ERP)
+```
+Ticket (CRM) ← Account ← Invoice History (ERP)
+     ↓                          ↓
+SLA Tracking            Payment Status
+```
+
+### Domain Events for Sync
+
+The system uses Django signals to emit domain events for cross-service synchronization:
+
+**Account Events:**
+- `account.created` - When a new account is created
+- `account.updated` - When account details are modified
+- `account.deleted` - When an account is removed
+
+**Contact Events:**
+- `contact.created` - When a new contact is added
+- `contact.updated` - When contact details change
+- `contact.deleted` - When a contact is removed
+
+Events are stored in the `events` table with:
+- Event type and payload (JSON)
+- Processing status (pending/processed/failed)
+- Retry count for failed events
+- Source service identifier
+
+### Account Schema (Enhanced)
+
+The Account model includes fields for both CRM and ERP integration:
+
+**CRM Fields:**
+- `name`, `legal_name` - Company identification
+- `industry`, `type`, `tier` - Classification
+- `website`, `phone`, `email` - Contact info
+- `owner`, `account_manager` - Assignment
+
+**ERP Integration Fields:**
+- `account_number` - Unique business identifier
+- `tax_id`, `vat_number` - Tax compliance
+- `payment_terms` - Net 15/30/45/60
+- `credit_limit` - Financial controls
+- `currency` - Default currency
+
+**Sync Tracking:**
+- `last_synced_at` - Last sync timestamp
+- `external_id` - External system reference
+
 ### Data Storage
 
 **Database:**
@@ -65,11 +157,12 @@ Preferred communication style: Simple, everyday language.
 
 **Schema Design:**
 - **Users**: Authentication table with username/password and role-based access
+- **Accounts**: Master customer/vendor entity with CRM and ERP fields
+- **Contacts**: Individuals linked to accounts with communication preferences
 - **Projects**: Core entity tracking name, location, status, progress, budget, and due dates
 - **Transactions**: Financial records linked to projects
 - **Equipment**: Inventory management with warehouse and employee assignment
 - **Safety Inspections**: Compliance tracking with findings and corrective actions
-- **Clients**: CRM data linked to accounts
 - **Documents**: File metadata with versioning
 
 **Design Decisions:**
@@ -77,6 +170,7 @@ Preferred communication style: Simple, everyday language.
 - **Decimal for Currency**: Uses `DecimalField` with appropriate precision
 - **Timestamps**: Automatic `created_at` and `updated_at` fields
 - **Foreign Keys**: Proper relationships between models with SET_NULL on delete
+- **Domain Events**: Django signals emit events for cross-service sync
 
 ### Authentication & Authorization
 
