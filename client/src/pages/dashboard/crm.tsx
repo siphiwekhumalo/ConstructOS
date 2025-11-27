@@ -32,7 +32,7 @@ export default function DashboardCRM() {
 
   const createClient = useMutation({
     mutationFn: async (data: typeof newClient) => {
-      const response = await fetch("/api/clients", {
+      const response = await fetch("/api/v1/clients", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

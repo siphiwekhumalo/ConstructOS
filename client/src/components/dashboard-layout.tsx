@@ -11,7 +11,10 @@ import {
   Settings, 
   LogOut,
   Menu,
-  BarChart3
+  BarChart3,
+  UserCog,
+  ShoppingCart,
+  Headphones
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -26,7 +29,10 @@ const navItems = [
   { label: "Safety", icon: ShieldAlert, href: "/dashboard/safety" },
   { label: "IoT Monitor", icon: Radio, href: "/dashboard/iot" },
   { label: "CRM", icon: Users, href: "/dashboard/crm" },
-  { label: "Reports & Analytics", icon: BarChart3, href: "/dashboard/reports" },
+  { label: "Orders", icon: ShoppingCart, href: "/dashboard/orders" },
+  { label: "HR", icon: UserCog, href: "/dashboard/hr" },
+  { label: "Support", icon: Headphones, href: "/dashboard/support" },
+  { label: "Reports", icon: BarChart3, href: "/dashboard/reports" },
 ];
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {

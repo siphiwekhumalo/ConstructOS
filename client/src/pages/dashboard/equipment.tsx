@@ -28,7 +28,7 @@ export default function DashboardEquipment() {
 
   const createEquipment = useMutation({
     mutationFn: async (data: typeof newEquipment) => {
-      const response = await fetch("/api/equipment", {
+      const response = await fetch("/api/v1/equipment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),

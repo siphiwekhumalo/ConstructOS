@@ -24,7 +24,7 @@ import {
   Loader2
 } from "lucide-react";
 import { useState, useRef, useEffect, useCallback } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { getProjects, getTransactions, getClients, getEquipment, getSafetyInspections } from "@/lib/api";
 
 interface PowerBIConfig {
@@ -32,6 +32,29 @@ interface PowerBIConfig {
   reportId: string;
   embedToken: string;
   embedUrl: string;
+}
+
+interface PowerBIEmbedResponse {
+  embedUrl: string;
+  embedToken: string;
+  reportId: string;
+  workspaceId: string;
+  expiration: string;
+}
+
+async function getPowerBIConfig(): Promise<{ configured: boolean; workspaceId?: string; reportId?: string }> {
+  const response = await fetch("/api/v1/powerbi/config");
+  if (!response.ok) throw new Error("Failed to get Power BI config");
+  return response.json();
+}
+
+async function getPowerBIEmbedToken(): Promise<PowerBIEmbedResponse> {
+  const response = await fetch("/api/v1/powerbi/embed-token");
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || "Failed to get embed token");
+  }
+  return response.json();
 }
 
 declare global {
@@ -163,6 +186,7 @@ function PowerBIEmbed({ config, onError }: { config: PowerBIConfig; onError: (er
 export default function DashboardReports() {
   const [isPowerBIConnected, setIsPowerBIConnected] = useState(false);
   const [isConfigDialogOpen, setIsConfigDialogOpen] = useState(false);
+  const [isServerConnecting, setIsServerConnecting] = useState(false);
   const [powerBIConfig, setPowerBIConfig] = useState<PowerBIConfig>({
     workspaceId: "",
     reportId: "",
@@ -177,6 +201,31 @@ export default function DashboardReports() {
   const { data: clients } = useQuery({ queryKey: ["clients"], queryFn: getClients });
   const { data: equipment } = useQuery({ queryKey: ["equipment"], queryFn: getEquipment });
   const { data: safetyInspections } = useQuery({ queryKey: ["safetyInspections"], queryFn: getSafetyInspections });
+  
+  const { data: serverPowerBIConfig } = useQuery({ 
+    queryKey: ["powerbi-config"], 
+    queryFn: getPowerBIConfig,
+    retry: false,
+  });
+
+  const handleServerConnect = async () => {
+    setIsServerConnecting(true);
+    setPowerBIError(null);
+    try {
+      const embedData = await getPowerBIEmbedToken();
+      setPowerBIConfig({
+        workspaceId: embedData.workspaceId,
+        reportId: embedData.reportId,
+        embedToken: embedData.embedToken,
+        embedUrl: embedData.embedUrl,
+      });
+      setIsPowerBIConnected(true);
+    } catch (error) {
+      setPowerBIError(error instanceof Error ? error.message : "Failed to connect to Power BI");
+    } finally {
+      setIsServerConnecting(false);
+    }
+  };
 
   const handlePowerBIConnect = () => {
     if (powerBIConfig.workspaceId && powerBIConfig.reportId && powerBIConfig.embedToken) {
@@ -343,29 +392,63 @@ export default function DashboardReports() {
                     </div>
                   </div>
                   {!isPowerBIConnected ? (
-                    <Dialog open={isConfigDialogOpen} onOpenChange={setIsConfigDialogOpen}>
-                      <DialogTrigger asChild>
-                        <Button className="bg-[#F2C811] text-black hover:bg-[#F2C811]/90 gap-2" data-testid="button-connect-powerbi">
-                          <Link2 className="h-4 w-4" /> Connect Power BI
+                    <div className="flex gap-2">
+                      {serverPowerBIConfig?.configured && (
+                        <Button 
+                          className="bg-[#F2C811] text-black hover:bg-[#F2C811]/90 gap-2" 
+                          onClick={handleServerConnect}
+                          disabled={isServerConnecting}
+                          data-testid="button-server-connect"
+                        >
+                          {isServerConnecting ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Link2 className="h-4 w-4" />
+                          )}
+                          {isServerConnecting ? "Connecting..." : "Auto Connect"}
                         </Button>
-                      </DialogTrigger>
-                      <DialogContent className="bg-card border-white/10 max-w-lg">
-                        <DialogHeader>
-                          <DialogTitle>Configure Power BI Embedded</DialogTitle>
-                          <DialogDescription>
-                            Enter your Azure Power BI Embedded credentials to display reports.
-                          </DialogDescription>
-                        </DialogHeader>
-                        <div className="space-y-4 mt-4">
-                          <div className="p-4 bg-secondary/30 rounded-sm border border-white/5">
-                            <h4 className="font-medium text-sm mb-2">Prerequisites:</h4>
-                            <ul className="text-xs text-muted-foreground space-y-1">
-                              <li>1. Register an Azure AD (Microsoft Entra) Application</li>
-                              <li>2. Create a Power BI Embedded capacity (A SKUs) or Premium</li>
-                              <li>3. Publish reports to a Power BI Workspace</li>
-                              <li>4. Generate an embed token using Power BI REST API</li>
-                            </ul>
-                          </div>
+                      )}
+                      <Dialog open={isConfigDialogOpen} onOpenChange={setIsConfigDialogOpen}>
+                        <DialogTrigger asChild>
+                          <Button 
+                            variant={serverPowerBIConfig?.configured ? "outline" : "default"}
+                            className={serverPowerBIConfig?.configured ? "gap-2 border-white/10" : "bg-[#F2C811] text-black hover:bg-[#F2C811]/90 gap-2"}
+                            data-testid="button-connect-powerbi"
+                          >
+                            <Settings className="h-4 w-4" /> 
+                            {serverPowerBIConfig?.configured ? "Manual Config" : "Connect Power BI"}
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="bg-card border-white/10 max-w-lg">
+                          <DialogHeader>
+                            <DialogTitle>Configure Power BI Embedded</DialogTitle>
+                            <DialogDescription>
+                              Enter your Azure Power BI Embedded credentials to display reports.
+                            </DialogDescription>
+                          </DialogHeader>
+                          <div className="space-y-4 mt-4">
+                            {serverPowerBIConfig?.configured && (
+                              <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-sm">
+                                <div className="flex items-start gap-3">
+                                  <CheckCircle2 className="h-5 w-5 text-green-500 mt-0.5" />
+                                  <div>
+                                    <h4 className="font-medium text-sm">Server Configuration Available</h4>
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                      Power BI is configured on the server. Use "Auto Connect" button for automatic authentication.
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                            <div className="p-4 bg-secondary/30 rounded-sm border border-white/5">
+                              <h4 className="font-medium text-sm mb-2">Manual Configuration Prerequisites:</h4>
+                              <ul className="text-xs text-muted-foreground space-y-1">
+                                <li>1. Register an Azure AD (Microsoft Entra) Application</li>
+                                <li>2. Create a Power BI Embedded capacity (A SKUs) or Premium</li>
+                                <li>3. Publish reports to a Power BI Workspace</li>
+                                <li>4. Generate an embed token using Power BI REST API</li>
+                              </ul>
+                            </div>
                           <div className="space-y-2">
                             <Label>Workspace ID (Group ID)</Label>
                             <Input
@@ -422,8 +505,9 @@ export default function DashboardReports() {
                             Connect & Embed Report
                           </Button>
                         </div>
-                      </DialogContent>
-                    </Dialog>
+                        </DialogContent>
+                      </Dialog>
+                    </div>
                   ) : (
                     <div className="flex items-center gap-2">
                       <div className="text-xs text-muted-foreground flex items-center gap-1">

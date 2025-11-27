@@ -51,7 +51,7 @@ export default function DashboardDocuments() {
 
   const createDocument = useMutation({
     mutationFn: async (data: typeof newDocument) => {
-      const response = await fetch("/api/documents", {
+      const response = await fetch("/api/v1/documents", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

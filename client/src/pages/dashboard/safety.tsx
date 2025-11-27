@@ -30,7 +30,7 @@ export default function DashboardSafety() {
 
   const createInspection = useMutation({
     mutationFn: async (data: typeof newInspection) => {
-      const response = await fetch("/api/safety/inspections", {
+      const response = await fetch("/api/v1/safety/inspections", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

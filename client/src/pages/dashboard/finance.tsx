@@ -33,7 +33,7 @@ export default function DashboardFinance() {
 
   const createTransaction = useMutation({
     mutationFn: async (data: typeof newTransaction) => {
-      const response = await fetch("/api/transactions", {
+      const response = await fetch("/api/v1/transactions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
