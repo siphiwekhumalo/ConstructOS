@@ -5,11 +5,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DollarSign, TrendingUp, TrendingDown, CreditCard, PieChart, Plus, FileText, Download } from "lucide-react";
+import { Banknote, TrendingUp, TrendingDown, CreditCard, PieChart, Plus, FileText, Download } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getTransactions, getProjects } from "@/lib/api";
 import { useState } from "react";
 import { format } from "date-fns";
+import { formatCurrency } from "@/lib/currency";
 
 export default function DashboardFinance() {
   const queryClient = useQueryClient();
@@ -94,7 +95,7 @@ export default function DashboardFinance() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Amount ($)</Label>
+                    <Label>Amount (R)</Label>
                     <Input
                       type="number"
                       placeholder="0.00"
@@ -152,11 +153,11 @@ export default function DashboardFinance() {
           <Card className="bg-card border-white/5">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Total Budget</CardTitle>
-              <DollarSign className="h-4 w-4 text-primary" />
+              <Banknote className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold font-display" data-testid="text-total-budget">
-                ${totalBudget.toLocaleString()}
+                {formatCurrency(totalBudget)}
               </div>
               <p className="text-xs text-muted-foreground mt-1">
                 Across {projects?.length || 0} projects
@@ -171,7 +172,7 @@ export default function DashboardFinance() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold font-display" data-testid="text-total-expenses">
-                ${totalExpenses.toLocaleString()}
+                {formatCurrency(totalExpenses)}
               </div>
               <p className="text-xs text-muted-foreground mt-1">
                 {transactions?.length || 0} transactions
@@ -186,7 +187,7 @@ export default function DashboardFinance() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold font-display" data-testid="text-remaining">
-                ${remaining.toLocaleString()}
+                {formatCurrency(remaining)}
               </div>
               <p className={`text-xs mt-1 ${remaining > 0 ? 'text-green-400' : 'text-red-400'}`}>
                 {remaining > 0 ? 'On track' : 'Over budget'}
@@ -204,7 +205,7 @@ export default function DashboardFinance() {
                 {pendingTransactions.length}
               </div>
               <p className="text-xs text-orange-400 mt-1">
-                ${pendingTransactions.reduce((sum, t) => sum + parseFloat(t.amount || "0"), 0).toLocaleString()} pending
+                {formatCurrency(pendingTransactions.reduce((sum, t) => sum + parseFloat(t.amount || "0"), 0))} pending
               </p>
             </CardContent>
           </Card>
@@ -268,7 +269,7 @@ export default function DashboardFinance() {
                   <div className="text-right">
                     <div className="font-mono font-bold">{paidTransactions.length}</div>
                     <div className="text-xs text-muted-foreground">
-                      ${paidTransactions.reduce((sum, t) => sum + parseFloat(t.amount || "0"), 0).toLocaleString()}
+                      {formatCurrency(paidTransactions.reduce((sum, t) => sum + parseFloat(t.amount || "0"), 0))}
                     </div>
                   </div>
                 </div>
@@ -280,7 +281,7 @@ export default function DashboardFinance() {
                   <div className="text-right">
                     <div className="font-mono font-bold">{pendingTransactions.length}</div>
                     <div className="text-xs text-muted-foreground">
-                      ${pendingTransactions.reduce((sum, t) => sum + parseFloat(t.amount || "0"), 0).toLocaleString()}
+                      {formatCurrency(pendingTransactions.reduce((sum, t) => sum + parseFloat(t.amount || "0"), 0))}
                     </div>
                   </div>
                 </div>
@@ -317,7 +318,7 @@ export default function DashboardFinance() {
                     </div>
                     <div className="text-right">
                       <div className="font-mono font-bold" data-testid={`text-amount-${tx.id}`}>
-                        ${parseFloat(tx.amount).toLocaleString()}
+                        {formatCurrency(tx.amount)}
                       </div>
                       <div className={`text-xs font-medium ${
                         tx.status === 'Pending' ? 'text-orange-400' : 

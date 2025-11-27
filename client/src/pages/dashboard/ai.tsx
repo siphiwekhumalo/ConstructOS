@@ -12,7 +12,7 @@ import {
   Target, 
   Wrench, 
   Package, 
-  DollarSign,
+  Banknote,
   Activity,
   RefreshCw,
   CheckCircle2,
@@ -37,6 +37,7 @@ import {
 } from "@/lib/api";
 import { format } from "date-fns";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from "recharts";
+import { formatCurrency, formatCurrencyCompact } from "@/lib/currency";
 
 function RiskBadge({ level }: { level: string }) {
   const colors: Record<string, string> = {
@@ -777,12 +778,12 @@ export default function DashboardAI() {
                         />
                         <YAxis 
                           stroke="#666"
-                          tickFormatter={(val) => `$${(val / 1000).toFixed(0)}K`}
+                          tickFormatter={(val) => formatCurrencyCompact(val)}
                         />
                         <Tooltip 
                           contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #333' }}
                           labelFormatter={(date) => format(new Date(date), 'MMM dd, yyyy')}
-                          formatter={(value: number) => [`$${value.toLocaleString()}`, '']}
+                          formatter={(value: number) => [formatCurrency(value), '']}
                         />
                         <Line 
                           type="monotone" 
@@ -818,7 +819,7 @@ export default function DashboardAI() {
                   <CardContent className="pt-6">
                     <div className="text-sm text-muted-foreground">Total Predicted Inflow</div>
                     <div className="text-2xl font-bold font-display text-green-500">
-                      ${(cashFlow.summary.total_predicted_inflow / 1000).toFixed(0)}K
+                      {formatCurrencyCompact(cashFlow.summary.total_predicted_inflow)}
                     </div>
                   </CardContent>
                 </Card>
@@ -826,7 +827,7 @@ export default function DashboardAI() {
                   <CardContent className="pt-6">
                     <div className="text-sm text-muted-foreground">Total Predicted Outflow</div>
                     <div className="text-2xl font-bold font-display text-red-500">
-                      ${(cashFlow.summary.total_predicted_outflow / 1000).toFixed(0)}K
+                      {formatCurrencyCompact(cashFlow.summary.total_predicted_outflow)}
                     </div>
                   </CardContent>
                 </Card>
@@ -834,7 +835,7 @@ export default function DashboardAI() {
                   <CardContent className="pt-6">
                     <div className="text-sm text-muted-foreground">Net Cash Flow</div>
                     <div className="text-2xl font-bold font-display text-blue-500">
-                      +${(cashFlow.summary.net_cash_flow / 1000).toFixed(0)}K
+                      +{formatCurrencyCompact(cashFlow.summary.net_cash_flow)}
                     </div>
                   </CardContent>
                 </Card>
@@ -842,7 +843,7 @@ export default function DashboardAI() {
                   <CardContent className="pt-6">
                     <div className="text-sm text-muted-foreground">Avg Daily Balance</div>
                     <div className="text-2xl font-bold font-display">
-                      ${(cashFlow.summary.average_daily_balance / 1000).toFixed(1)}K
+                      {formatCurrencyCompact(cashFlow.summary.average_daily_balance)}
                     </div>
                   </CardContent>
                 </Card>

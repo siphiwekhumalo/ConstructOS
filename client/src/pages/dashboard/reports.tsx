@@ -26,6 +26,7 @@ import {
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { getProjects, getTransactions, getClients, getEquipment, getSafetyInspections } from "@/lib/api";
+import { formatCurrency, formatCurrencyCompact } from "@/lib/currency";
 
 interface PowerBIConfig {
   workspaceId: string;
@@ -322,7 +323,7 @@ export default function DashboardReports() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Total Budget</p>
-                  <p className="text-2xl font-bold font-display">${(totalBudget / 1000000).toFixed(1)}M</p>
+                  <p className="text-2xl font-bold font-display">{formatCurrencyCompact(totalBudget)}</p>
                 </div>
                 <TrendingUp className="h-8 w-8 text-green-500 opacity-80" />
               </div>
@@ -333,7 +334,7 @@ export default function DashboardReports() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Total Expenses</p>
-                  <p className="text-2xl font-bold font-display">${totalExpenses.toLocaleString()}</p>
+                  <p className="text-2xl font-bold font-display">{formatCurrency(totalExpenses)}</p>
                 </div>
                 <BarChart3 className="h-8 w-8 text-primary opacity-80" />
               </div>

@@ -6,7 +6,7 @@ import {
   AlertTriangle, 
   CheckCircle2, 
   Clock, 
-  DollarSign, 
+  Banknote, 
   Users, 
   Truck, 
   TrendingUp,
@@ -16,6 +16,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { getProjects, getTransactions, getClients, getEquipment } from "@/lib/api";
 import { Link } from "wouter";
+import { formatCurrency, formatCurrencyCompact } from "@/lib/currency";
 
 export default function DashboardOverview() {
   const { data: projects } = useQuery({ queryKey: ["projects"], queryFn: getProjects });
@@ -45,9 +46,9 @@ export default function DashboardOverview() {
     },
     {
       title: "Total Revenue",
-      value: `$${(totalBudget / 1000000).toFixed(1)}M`,
+      value: formatCurrencyCompact(totalBudget),
       change: `${projects?.length || 0} projects`,
-      icon: DollarSign,
+      icon: Banknote,
       color: "text-green-500",
       href: "/dashboard/finance",
     },
@@ -222,13 +223,13 @@ export default function DashboardOverview() {
                   <div className="p-3 bg-secondary/30 rounded-sm">
                     <div className="text-xs text-muted-foreground">Total Budget</div>
                     <div className="font-mono font-bold mt-1" data-testid="text-total-budget">
-                      ${totalBudget.toLocaleString()}
+                      {formatCurrency(totalBudget)}
                     </div>
                   </div>
                   <div className="p-3 bg-secondary/30 rounded-sm">
                     <div className="text-xs text-muted-foreground">Expenses</div>
                     <div className="font-mono font-bold mt-1" data-testid="text-expenses">
-                      ${totalExpenses.toLocaleString()}
+                      {formatCurrency(totalExpenses)}
                     </div>
                   </div>
                 </div>

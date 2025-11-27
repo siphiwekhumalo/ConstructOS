@@ -7,12 +7,13 @@ import {
   Loader2,
   AlertCircle,
   Clock,
-  DollarSign
+  Banknote
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useAccountRelatedData } from '@/hooks/use-contextual-data';
+import { formatCurrency } from '@/lib/currency';
 
 interface ContextPanelProps {
   accountId: string;
@@ -37,13 +38,6 @@ const statusColors = {
   paid: 'bg-emerald-500/20 text-emerald-400',
   overdue: 'bg-red-500/20 text-red-400',
 };
-
-function formatCurrency(amount: string) {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-  }).format(parseFloat(amount));
-}
 
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString('en-US', {
@@ -178,7 +172,7 @@ export function ContextPanel({ accountId, className }: ContextPanelProps) {
                         </div>
                         <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
                           <span className="flex items-center gap-1">
-                            <DollarSign className="h-3 w-3" />
+                            <Banknote className="h-3 w-3" />
                             {formatCurrency(invoice.total_amount)}
                           </span>
                           {invoice.due_date && (
