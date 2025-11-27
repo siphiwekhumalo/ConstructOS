@@ -8,7 +8,7 @@ from channels.generic.websocket import AsyncJsonWebsocketConsumer
 from channels.db import database_sync_to_async
 from django.core.cache import cache
 
-from .models import ChatRoom, RoomMembership, Message, TypingIndicator
+from .models import ChatRoom, RoomMembership, Message, TypingIndicator, DirectMessageThread, DirectMessage
 
 logger = logging.getLogger(__name__)
 
@@ -346,3 +346,204 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             }, timeout=300)
         else:
             cache.delete(cache_key)
+
+
+class DirectMessageConsumer(AsyncJsonWebsocketConsumer):
+    """
+    WebSocket consumer for Direct Messages.
+    Uses private channel naming: dm_{sorted_user_ids}
+    """
+    
+    async def connect(self):
+        self.thread_id = self.scope['url_route']['kwargs']['thread_id']
+        
+        self.user_id = self.scope.get('user_id')
+        self.user_name = self.scope.get('user_name', 'Anonymous')
+        self.user_email = self.scope.get('user_email', '')
+        
+        if not self.user_id or self.user_id == 'anonymous':
+            logger.warning(f"Unauthenticated DM WebSocket connection rejected for thread {self.thread_id}")
+            await self.close(code=4001)
+            return
+        
+        thread_info = await self.get_thread_info()
+        if not thread_info:
+            logger.warning(f"DM thread {self.thread_id} not found")
+            await self.close(code=4004)
+            return
+        
+        if str(self.user_id) not in [str(thread_info['user1_id']), str(thread_info['user2_id'])]:
+            logger.warning(f"User {self.user_id} is not a participant of DM thread {self.thread_id}")
+            await self.close(code=4003)
+            return
+        
+        self.dm_group_name = thread_info['channel_name']
+        
+        await self.channel_layer.group_add(
+            self.dm_group_name,
+            self.channel_name
+        )
+        
+        await self.accept()
+        
+        logger.info(f"User {self.user_name} ({self.user_id}) connected to DM thread {self.thread_id}")
+    
+    async def disconnect(self, close_code):
+        if hasattr(self, 'dm_group_name'):
+            await self.channel_layer.group_discard(
+                self.dm_group_name,
+                self.channel_name
+            )
+        
+        logger.info(f"User {self.user_name} disconnected from DM thread {self.thread_id}")
+    
+    async def receive_json(self, content):
+        """Handle incoming WebSocket messages."""
+        message_type = content.get('type', '')
+        
+        handlers = {
+            'dm_message': self.handle_dm_message,
+            'typing_start': self.handle_typing_start,
+            'typing_stop': self.handle_typing_stop,
+            'mark_read': self.handle_mark_read,
+        }
+        
+        handler = handlers.get(message_type)
+        if handler:
+            await handler(content)
+        else:
+            await self.send_json({
+                'type': 'error',
+                'message': f'Unknown message type: {message_type}'
+            })
+    
+    async def handle_dm_message(self, content):
+        """Process and broadcast a new DM."""
+        message_content = content.get('content', '').strip()
+        if not message_content:
+            return
+        
+        message = await self.save_dm(
+            content=message_content,
+            message_type=content.get('message_type', 'text'),
+        )
+        
+        if message:
+            await self.channel_layer.group_send(
+                self.dm_group_name,
+                {
+                    'type': 'dm_message_broadcast',
+                    'message': {
+                        'id': str(message.id),
+                        'thread_id': str(self.thread_id),
+                        'sender_id': self.user_id,
+                        'sender_name': self.user_name,
+                        'sender_email': self.user_email,
+                        'content': message.content,
+                        'message_type': message.message_type,
+                        'created_at': message.created_at.isoformat(),
+                    }
+                }
+            )
+    
+    async def handle_typing_start(self, content):
+        """User started typing."""
+        await self.channel_layer.group_send(
+            self.dm_group_name,
+            {
+                'type': 'typing_broadcast',
+                'user_id': self.user_id,
+                'user_name': self.user_name,
+                'is_typing': True,
+            }
+        )
+    
+    async def handle_typing_stop(self, content):
+        """User stopped typing."""
+        await self.channel_layer.group_send(
+            self.dm_group_name,
+            {
+                'type': 'typing_broadcast',
+                'user_id': self.user_id,
+                'user_name': self.user_name,
+                'is_typing': False,
+            }
+        )
+    
+    async def handle_mark_read(self, content):
+        """Mark messages as read."""
+        await self.update_read_status()
+    
+    async def dm_message_broadcast(self, event):
+        """Send DM to WebSocket."""
+        await self.send_json({
+            'type': 'new_dm',
+            'message': event['message']
+        })
+    
+    async def typing_broadcast(self, event):
+        """Send typing indicator to WebSocket."""
+        if event['user_id'] != self.user_id:
+            await self.send_json({
+                'type': 'typing',
+                'user_id': event['user_id'],
+                'user_name': event['user_name'],
+                'is_typing': event['is_typing'],
+            })
+    
+    @database_sync_to_async
+    def get_thread_info(self):
+        """Get thread info and channel name."""
+        try:
+            thread = DirectMessageThread.objects.get(id=self.thread_id)
+            return {
+                'user1_id': thread.user1_id,
+                'user2_id': thread.user2_id,
+                'channel_name': thread.channel_name,
+            }
+        except DirectMessageThread.DoesNotExist:
+            return None
+    
+    @database_sync_to_async
+    def save_dm(self, content, message_type='text'):
+        """Save a DM to the database."""
+        try:
+            thread = DirectMessageThread.objects.get(id=self.thread_id)
+            
+            message = DirectMessage.objects.create(
+                thread=thread,
+                sender_id=self.user_id,
+                sender_email=self.user_email,
+                sender_name=self.user_name,
+                message_type=message_type,
+                content=content,
+            )
+            
+            thread.latest_message = message
+            thread.save(update_fields=['latest_message', 'updated_at'])
+            
+            return message
+        except Exception as e:
+            logger.error(f"Error saving DM: {e}")
+            return None
+    
+    @database_sync_to_async
+    def update_read_status(self):
+        """Update read status for current user."""
+        try:
+            thread = DirectMessageThread.objects.get(id=self.thread_id)
+            now = datetime.now(timezone.utc)
+            
+            if str(thread.user1_id) == str(self.user_id):
+                thread.user1_last_read_at = now
+                thread.save(update_fields=['user1_last_read_at'])
+            elif str(thread.user2_id) == str(self.user_id):
+                thread.user2_last_read_at = now
+                thread.save(update_fields=['user2_last_read_at'])
+            
+            thread.messages.filter(is_read=False).exclude(sender_id=self.user_id).update(
+                is_read=True,
+                read_at=now
+            )
+        except Exception as e:
+            logger.error(f"Error updating read status: {e}")

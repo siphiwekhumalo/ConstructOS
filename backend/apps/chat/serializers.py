@@ -2,7 +2,7 @@
 Serializers for chat models.
 """
 from rest_framework import serializers
-from .models import ChatRoom, RoomMembership, Message, MessageReaction
+from .models import ChatRoom, RoomMembership, Message, MessageReaction, DirectMessageThread, DirectMessage
 
 
 class MessageReactionSerializer(serializers.ModelSerializer):
@@ -118,4 +118,101 @@ class SendMessageSerializer(serializers.Serializer):
         child=serializers.CharField(),
         required=False,
         default=list
+    )
+
+
+class DirectMessageSerializer(serializers.ModelSerializer):
+    """Serializer for direct messages."""
+    class Meta:
+        model = DirectMessage
+        fields = [
+            'id', 'thread', 'sender_id', 'sender_name', 'sender_email',
+            'message_type', 'content', 
+            'attachment_url', 'attachment_name', 'attachment_type',
+            'is_read', 'read_at', 'is_edited', 'edited_at',
+            'is_deleted', 'created_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'is_edited', 'edited_at', 'is_deleted', 'is_read', 'read_at']
+
+
+class DirectMessageThreadSerializer(serializers.ModelSerializer):
+    """Serializer for DM thread listing."""
+    other_user = serializers.SerializerMethodField()
+    unread_count = serializers.SerializerMethodField()
+    last_message = serializers.SerializerMethodField()
+    channel_name = serializers.CharField(read_only=True)
+    
+    class Meta:
+        model = DirectMessageThread
+        fields = [
+            'id', 'user1_id', 'user1_name', 'user1_email',
+            'user2_id', 'user2_name', 'user2_email',
+            'created_at', 'updated_at', 'channel_name',
+            'other_user', 'unread_count', 'last_message'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at', 'channel_name']
+    
+    def get_other_user(self, obj):
+        request = self.context.get('request')
+        current_user_id = None
+        
+        if request:
+            user = getattr(request, 'user', None)
+            if user and hasattr(user, 'id'):
+                current_user_id = str(user.id)
+            else:
+                current_user_id = request.session.get('user_id')
+        
+        if current_user_id:
+            return obj.get_other_user(current_user_id)
+        return None
+    
+    def get_unread_count(self, obj):
+        request = self.context.get('request')
+        current_user_id = None
+        
+        if request:
+            user = getattr(request, 'user', None)
+            if user and hasattr(user, 'id'):
+                current_user_id = str(user.id)
+            else:
+                current_user_id = request.session.get('user_id')
+        
+        if current_user_id:
+            return obj.get_unread_count(current_user_id)
+        return 0
+    
+    def get_last_message(self, obj):
+        if obj.latest_message:
+            return {
+                'id': str(obj.latest_message.id),
+                'content': obj.latest_message.content[:100],
+                'sender_name': obj.latest_message.sender_name,
+                'created_at': obj.latest_message.created_at.isoformat()
+            }
+        
+        last_msg = obj.messages.filter(is_deleted=False).order_by('-created_at').first()
+        if last_msg:
+            return {
+                'id': str(last_msg.id),
+                'content': last_msg.content[:100],
+                'sender_name': last_msg.sender_name,
+                'created_at': last_msg.created_at.isoformat()
+            }
+        return None
+
+
+class CreateDMThreadSerializer(serializers.Serializer):
+    """Serializer for creating or retrieving a DM thread."""
+    target_user_id = serializers.CharField()
+    target_user_name = serializers.CharField(required=False, default='')
+    target_user_email = serializers.EmailField(required=False, default='')
+
+
+class SendDMSerializer(serializers.Serializer):
+    """Serializer for sending a direct message."""
+    content = serializers.CharField()
+    message_type = serializers.ChoiceField(
+        choices=DirectMessage.MESSAGE_TYPES,
+        default='text'
     )

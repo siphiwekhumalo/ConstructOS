@@ -3,11 +3,12 @@ URL configuration for chat API.
 """
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import ChatRoomViewSet, MessageViewSet
+from .views import ChatRoomViewSet, MessageViewSet, DirectMessageThreadViewSet
 
 router = DefaultRouter()
 router.register(r'rooms', ChatRoomViewSet, basename='chatroom')
 router.register(r'messages', MessageViewSet, basename='message')
+router.register(r'dm', DirectMessageThreadViewSet, basename='dm')
 
 urlpatterns = [
     path('', include(router.urls)),

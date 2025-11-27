@@ -8,11 +8,13 @@ from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
 from django.db.models import Q
 
-from .models import ChatRoom, RoomMembership, Message, MessageReaction
+from .models import ChatRoom, RoomMembership, Message, MessageReaction, DirectMessageThread, DirectMessage
 from .serializers import (
     ChatRoomSerializer, ChatRoomDetailSerializer,
     MessageSerializer, RoomMembershipSerializer,
-    CreateRoomSerializer, SendMessageSerializer
+    CreateRoomSerializer, SendMessageSerializer,
+    DirectMessageThreadSerializer, DirectMessageSerializer,
+    CreateDMThreadSerializer, SendDMSerializer
 )
 
 
@@ -344,3 +346,188 @@ class MessageViewSet(viewsets.ModelViewSet):
             return Response({'message': 'Reaction removed'}, status=status.HTTP_200_OK)
         
         return Response({'message': 'Reaction added'}, status=status.HTTP_201_CREATED)
+
+
+class DirectMessageThreadViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint for Direct Message threads.
+    Handles DM conversations between two users.
+    """
+    serializer_class = DirectMessageThreadSerializer
+    permission_classes = [AllowAny]
+    
+    def dispatch(self, request, *args, **kwargs):
+        """Ensure user is authenticated before processing any request."""
+        ctx = get_user_context(request)
+        if not ctx.get('user_id'):
+            return Response(
+                {'error': 'Authentication required'},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        return super().dispatch(request, *args, **kwargs)
+    
+    def get_queryset(self):
+        """Get threads for the current user."""
+        ctx = get_user_context(self.request)
+        user_id = ctx['user_id']
+        
+        return DirectMessageThread.objects.filter(
+            Q(user1_id=user_id) | Q(user2_id=user_id)
+        ).order_by('-updated_at')
+    
+    def create(self, request, *args, **kwargs):
+        """
+        Create or retrieve a DM thread with another user.
+        If a thread already exists, returns the existing one.
+        """
+        serializer = CreateDMThreadSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        ctx = get_user_context(request)
+        current_user_id = ctx['user_id']
+        current_user_name = ctx['user_name']
+        current_user_email = ctx['user_email']
+        
+        target_user_id = serializer.validated_data['target_user_id']
+        target_user_name = serializer.validated_data.get('target_user_name', '')
+        target_user_email = serializer.validated_data.get('target_user_email', '')
+        
+        if current_user_id == target_user_id:
+            return Response(
+                {'error': 'Cannot create a DM thread with yourself'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        thread, created = DirectMessageThread.get_or_create_thread(
+            user1_id=current_user_id,
+            user1_name=current_user_name,
+            user1_email=current_user_email,
+            user2_id=target_user_id,
+            user2_name=target_user_name,
+            user2_email=target_user_email,
+        )
+        
+        output_serializer = DirectMessageThreadSerializer(thread, context={'request': request})
+        status_code = status.HTTP_201_CREATED if created else status.HTTP_200_OK
+        return Response(output_serializer.data, status=status_code)
+    
+    @action(detail=True, methods=['get'])
+    def messages(self, request, pk=None):
+        """Get messages for a DM thread with pagination."""
+        thread = self.get_object()
+        
+        ctx = get_user_context(request)
+        user_id = ctx['user_id']
+        
+        if str(thread.user1_id) != str(user_id) and str(thread.user2_id) != str(user_id):
+            return Response(
+                {'error': 'Not a participant in this thread'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        limit = int(request.query_params.get('limit', 50))
+        before = request.query_params.get('before')
+        
+        messages = thread.messages.filter(is_deleted=False)
+        
+        if before:
+            messages = messages.filter(created_at__lt=before)
+        
+        messages = messages.order_by('-created_at')[:limit]
+        messages = list(reversed(messages))
+        
+        serializer = DirectMessageSerializer(messages, many=True)
+        return Response({
+            'messages': serializer.data,
+            'thread_id': str(thread.id),
+            'channel_name': thread.channel_name,
+        })
+    
+    @action(detail=True, methods=['post'])
+    def send(self, request, pk=None):
+        """Send a message in a DM thread."""
+        thread = self.get_object()
+        
+        ctx = get_user_context(request)
+        user_id = ctx['user_id']
+        user_name = ctx['user_name']
+        user_email = ctx['user_email']
+        
+        if str(thread.user1_id) != str(user_id) and str(thread.user2_id) != str(user_id):
+            return Response(
+                {'error': 'Not a participant in this thread'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        serializer = SendDMSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        message = DirectMessage.objects.create(
+            thread=thread,
+            sender_id=user_id,
+            sender_name=user_name,
+            sender_email=user_email,
+            content=serializer.validated_data['content'],
+            message_type=serializer.validated_data.get('message_type', 'text'),
+        )
+        
+        thread.latest_message = message
+        thread.save(update_fields=['latest_message', 'updated_at'])
+        
+        output_serializer = DirectMessageSerializer(message)
+        return Response(output_serializer.data, status=status.HTTP_201_CREATED)
+    
+    @action(detail=True, methods=['post'])
+    def mark_read(self, request, pk=None):
+        """Mark all messages in the thread as read."""
+        thread = self.get_object()
+        
+        ctx = get_user_context(request)
+        user_id = ctx['user_id']
+        
+        now = datetime.now(timezone.utc)
+        
+        if str(thread.user1_id) == str(user_id):
+            thread.user1_last_read_at = now
+            thread.save(update_fields=['user1_last_read_at'])
+        elif str(thread.user2_id) == str(user_id):
+            thread.user2_last_read_at = now
+            thread.save(update_fields=['user2_last_read_at'])
+        else:
+            return Response(
+                {'error': 'Not a participant in this thread'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        thread.messages.filter(is_read=False).exclude(sender_id=user_id).update(
+            is_read=True,
+            read_at=now
+        )
+        
+        return Response({'message': 'Messages marked as read'})
+    
+    @action(detail=False, methods=['get'])
+    def with_user(self, request):
+        """Get or check if a thread exists with a specific user."""
+        target_user_id = request.query_params.get('user_id')
+        
+        if not target_user_id:
+            return Response(
+                {'error': 'user_id query parameter is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        ctx = get_user_context(request)
+        current_user_id = ctx['user_id']
+        
+        sorted_ids = sorted([str(current_user_id), str(target_user_id)])
+        thread = DirectMessageThread.objects.filter(
+            Q(user1_id=sorted_ids[0], user2_id=sorted_ids[1]) |
+            Q(user1_id=sorted_ids[1], user2_id=sorted_ids[0])
+        ).first()
+        
+        if thread:
+            serializer = DirectMessageThreadSerializer(thread, context={'request': request})
+            return Response(serializer.data)
+        
+        return Response({'exists': False, 'thread': None})
