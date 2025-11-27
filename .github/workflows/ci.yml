@@ -8,6 +8,12 @@ jobs:
   test_suite:
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    env:
+      POSTGRES_DB: test_db
+      POSTGRES_USER: test_user
+      POSTGRES_PASSWORD: test_pass
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: 5432
     steps:
     - name: ⬇️ Checkout Code
       uses: actions/checkout@v4
@@ -44,12 +50,6 @@ jobs:
     - name: Run tests
       run: |
         pytest backend/tests/ --cov=backend/ --junitxml=reports/python-test-results.xml
-      env:
-        POSTGRES_DB: test_db
-        POSTGRES_USER: test_user
-        POSTGRES_PASSWORD: test_pass
-        POSTGRES_HOST: localhost
-        POSTGRES_PORT: 5432
 
     # --- React Frontend (Jest) ---
     - name: 🟢 Setup Node.js and Install React Dependencies
