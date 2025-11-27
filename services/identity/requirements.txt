@@ -12,3 +12,4 @@ PyJWT[crypto]>=2.10.1
 cryptography>=46.0.3
 redis>=5.0.0
 requests>=2.31.0
+pytest>=7.4.0
