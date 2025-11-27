@@ -72,6 +72,7 @@ export type Equipment = typeof equipment.$inferSelect;
 export const safetyInspections = pgTable("safety_inspections", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   site: text("site").notNull(),
+  type: text("type").notNull(),
   status: text("status").notNull(),
   inspector: text("inspector").notNull(),
   date: timestamp("date").notNull().defaultNow(),

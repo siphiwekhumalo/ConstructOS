@@ -152,5 +152,96 @@ export async function seedDatabase() {
     }
   }
 
+  // Seed documents
+  const documentsData = [
+    {
+      name: "Project_Alpha_Blueprints_v2.pdf",
+      type: "Blueprint",
+      size: "24.5 MB",
+      author: "Architect Team",
+      uploadedAt: new Date(),
+    },
+    {
+      name: "Site_Safety_Protocol_2025.docx",
+      type: "Compliance",
+      size: "1.2 MB",
+      author: "Safety Officer",
+      uploadedAt: new Date(Date.now() - 86400000),
+    },
+    {
+      name: "Q3_Budget_Analysis.xlsx",
+      type: "Financial",
+      size: "850 KB",
+      author: "Finance Dept",
+      uploadedAt: new Date(Date.now() - 259200000),
+    },
+    {
+      name: "Vendor_Contracts_Signed.pdf",
+      type: "Contract",
+      size: "5.6 MB",
+      author: "Legal Team",
+      uploadedAt: new Date(Date.now() - 604800000),
+    },
+    {
+      name: "Foundation_Permit_Approved.pdf",
+      type: "Permit",
+      size: "2.1 MB",
+      author: "City Planning",
+      uploadedAt: new Date(Date.now() - 432000000),
+    },
+  ];
+
+  for (const doc of documentsData) {
+    try {
+      await storage.createDocument(doc);
+    } catch (error) {
+      console.log("Document already exists or error:", error);
+    }
+  }
+
+  // Seed safety inspections
+  const inspectionsData = [
+    {
+      site: "Site A",
+      type: "Foundation",
+      status: "Passed",
+      inspector: "John Dawson",
+      notes: "All foundation work meets safety standards.",
+      date: new Date(),
+    },
+    {
+      site: "Site B",
+      type: "Electrical",
+      status: "Warning",
+      inspector: "Sarah Mitchell",
+      notes: "Minor grounding issues need attention.",
+      date: new Date(Date.now() - 86400000),
+    },
+    {
+      site: "Site A",
+      type: "Crane Operations",
+      status: "Passed",
+      inspector: "Mike Rodriguez",
+      notes: "Crane certified and operational.",
+      date: new Date(Date.now() - 172800000),
+    },
+    {
+      site: "Site C",
+      type: "PPE Compliance",
+      status: "Passed",
+      inspector: "Lisa Chen",
+      notes: "All workers wearing proper protective equipment.",
+      date: new Date(Date.now() - 259200000),
+    },
+  ];
+
+  for (const inspection of inspectionsData) {
+    try {
+      await storage.createSafetyInspection(inspection);
+    } catch (error) {
+      console.log("Inspection already exists or error:", error);
+    }
+  }
+
   console.log("Database seeded successfully!");
 }
