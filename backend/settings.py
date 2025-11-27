@@ -17,12 +17,14 @@ DEBUG = os.environ.get('DEBUG', 'True').lower() == 'true'
 ALLOWED_HOSTS = ['*']
 
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'channels',
     'rest_framework',
     'corsheaders',
     'django_filters',
@@ -31,6 +33,7 @@ INSTALLED_APPS = [
     'backend.apps.erp',
     'backend.apps.construction',
     'backend.apps.ai',
+    'backend.apps.chat',
 ]
 
 MIDDLEWARE = [
@@ -202,3 +205,16 @@ CELERY_TIMEZONE = TIME_ZONE
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 30 * 60
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+
+ASGI_APPLICATION = 'backend.asgi.application'
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            'hosts': [REDIS_URL],
+            'capacity': 1500,
+            'expiry': 10,
+        },
+    },
+}
