@@ -5,6 +5,65 @@ from rest_framework.views import APIView
 from django.db.models import Q
 from .models import User, Event, AuditLog, Favorite
 from .serializers import UserSerializer, UserCreateSerializer, EventSerializer, AuditLogSerializer, FavoriteSerializer
+from .permissions import IsAuthenticated, IsAdmin, IsFinanceUser, IsHRManager
+
+
+class AuthMeView(APIView):
+    """
+    Return the current authenticated user's profile, roles, and permissions.
+    """
+    def get(self, request):
+        user = getattr(request, 'user', None)
+        
+        if not user or not hasattr(user, 'id') or not isinstance(user, User):
+            return Response({
+                'authenticated': False,
+                'user': None,
+                'roles': [],
+                'azure_ad_roles': [],
+                'permissions': []
+            })
+        
+        permission_map = {
+            'admin': ['all'],
+            'Administrator': ['all'],
+            'executive': ['read_all', 'reports', 'analytics'],
+            'Executive': ['read_all', 'reports', 'analytics'],
+            'finance': ['invoices', 'payments', 'budgets', 'financial_reports'],
+            'Finance_User': ['invoices', 'payments', 'budgets', 'financial_reports'],
+            'hr': ['employees', 'payroll', 'hr_records'],
+            'HR_Manager': ['employees', 'payroll', 'hr_records'],
+            'operations': ['inventory', 'warehouses', 'equipment', 'orders'],
+            'Operations_Specialist': ['inventory', 'warehouses', 'equipment', 'orders'],
+            'site_manager': ['projects', 'safety', 'site_equipment', 'site_documents'],
+            'Site_Manager': ['projects', 'safety', 'site_equipment', 'site_documents'],
+        }
+        
+        permissions = set()
+        user_roles = getattr(user, 'roles', [user.role]) if hasattr(user, 'role') else []
+        for role in user_roles:
+            role_perms = permission_map.get(role, [])
+            permissions.update(role_perms)
+        
+        azure_ad_roles = getattr(user, 'azure_ad_roles', []) or []
+        
+        return Response({
+            'authenticated': True,
+            'user': {
+                'id': user.id,
+                'username': user.username,
+                'email': user.email,
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'full_name': f"{user.first_name or ''} {user.last_name or ''}".strip(),
+                'role': user.role,
+                'department': user.department,
+                'is_active': user.is_active,
+            },
+            'roles': user_roles,
+            'azure_ad_roles': azure_ad_roles,
+            'permissions': list(permissions),
+        })
 
 
 class UnifiedSearchView(APIView):

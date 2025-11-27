@@ -182,7 +182,43 @@ The Account model includes fields for both CRM and ERP integration:
 
 ### Authentication & Authorization
 
-Currently implements basic user schema with username/password fields. Django REST Framework provides token authentication capabilities.
+The platform implements Role-Based Access Control (RBAC) using Microsoft Entra ID (Azure AD) for enterprise SSO authentication.
+
+**User Roles:**
+- `admin` / `Administrator` - Full access to all features
+- `finance` / `Finance_User` - Access to invoices, payments, budgets, financial reports
+- `hr` / `HR_Manager` - Access to employees, payroll, HR records
+- `operations` / `Operations_Specialist` - Access to inventory, warehouses, equipment, orders
+- `site_manager` / `Site_Manager` - Access to projects, safety, site-specific data
+- `executive` / `Executive` - Read-only access to all data for oversight
+
+**Azure AD Configuration:**
+
+To enable Azure AD authentication, set the following environment variables:
+
+Backend (Python/Django):
+- `AZURE_AD_TENANT_ID` - Your Azure AD tenant ID
+- `AZURE_AD_CLIENT_ID` - Your application's client ID
+
+Frontend (React/Vite):
+- `VITE_AZURE_AD_CLIENT_ID` - Same client ID as backend
+- `VITE_AZURE_AD_TENANT_ID` - Same tenant ID as backend
+
+**Azure AD App Registration Setup:**
+1. Register an application in Microsoft Entra ID portal
+2. Configure redirect URIs for your deployment URL
+3. Define App Roles in the manifest (Finance_User, HR_Manager, Operations_Specialist, Site_Manager)
+4. Assign users/groups to roles in Enterprise Applications
+
+**Permission Classes (DRF):**
+- `IsAuthenticated` - Requires valid Azure AD token
+- `IsFinanceUser` - Requires Finance or Admin role
+- `IsHRManager` - Requires HR or Admin role
+- `IsOperationsSpecialist` - Requires Operations or Admin role
+- `IsSiteManager` - Requires Site Manager or Admin role
+
+**Auth Endpoint:**
+- `GET /api/v1/auth/me/` - Returns current user profile, roles, and permissions
 
 ## Navigation and Interface Features
 

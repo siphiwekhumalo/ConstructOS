@@ -9,6 +9,28 @@ import type {
 
 const API_BASE = "/api/v1";
 
+let authToken: string | null = null;
+
+export function setAuthToken(token: string | null) {
+  authToken = token;
+}
+
+export function getAuthToken(): string | null {
+  return authToken;
+}
+
+function getAuthHeaders(): HeadersInit {
+  const headers: HeadersInit = {
+    "Content-Type": "application/json",
+  };
+  
+  if (authToken) {
+    headers["Authorization"] = `Bearer ${authToken}`;
+  }
+  
+  return headers;
+}
+
 interface PaginatedResponse<T> {
   count: number;
   next: string | null;
@@ -18,6 +40,12 @@ interface PaginatedResponse<T> {
 
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error("Authentication required");
+    }
+    if (response.status === 403) {
+      throw new Error("Access denied - insufficient permissions");
+    }
     const error = await response.json().catch(() => ({ error: "Request failed" }));
     throw new Error(error.error || error.detail || "Request failed");
   }
@@ -26,6 +54,12 @@ async function handleResponse<T>(response: Response): Promise<T> {
 
 async function handleListResponse<T>(response: Response): Promise<T[]> {
   if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error("Authentication required");
+    }
+    if (response.status === 403) {
+      throw new Error("Access denied - insufficient permissions");
+    }
     const error = await response.json().catch(() => ({ error: "Request failed" }));
     throw new Error(error.error || error.detail || "Request failed");
   }

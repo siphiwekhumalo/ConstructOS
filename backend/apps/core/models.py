@@ -3,24 +3,50 @@ from django.db import models
 
 
 class User(models.Model):
+    ROLE_CHOICES = [
+        ('admin', 'Administrator'),
+        ('finance', 'Finance'),
+        ('hr', 'HR Manager'),
+        ('operations', 'Operations'),
+        ('site_manager', 'Site Manager'),
+        ('executive', 'Executive'),
+        ('user', 'User'),
+    ]
+    
     id = models.CharField(max_length=255, primary_key=True, default=uuid.uuid4)
     username = models.CharField(max_length=255, unique=True)
     email = models.CharField(max_length=255, unique=True)
-    password = models.TextField()
+    password = models.TextField(blank=True, default='')
     first_name = models.TextField(null=True, blank=True)
     last_name = models.TextField(null=True, blank=True)
-    role = models.TextField(default='user')
+    role = models.TextField(default='user', choices=ROLE_CHOICES)
     department = models.TextField(null=True, blank=True)
     is_active = models.BooleanField(default=True)
     last_login = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    
+    azure_ad_object_id = models.CharField(max_length=255, unique=True, null=True, blank=True)
+    azure_ad_roles = models.JSONField(default=list, blank=True)
 
     class Meta:
         db_table = 'users'
 
     def __str__(self):
         return self.username
+    
+    @property
+    def roles(self):
+        roles = [self.role]
+        if self.azure_ad_roles:
+            roles.extend(self.azure_ad_roles)
+        return list(set(roles))
+    
+    def has_role(self, role):
+        return role in self.roles
+    
+    def has_any_role(self, roles_list):
+        return any(role in self.roles for role in roles_list)
 
 
 class Event(models.Model):

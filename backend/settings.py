@@ -112,8 +112,11 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'backend.apps.core.authentication.OptionalAzureADAuthentication',
+    ],
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.AllowAny',
+        'backend.apps.core.permissions.AllowAnyForRead',
     ],
     'DEFAULT_FILTER_BACKENDS': [
         'django_filters.rest_framework.DjangoFilterBackend',
@@ -124,6 +127,9 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 50,
     'DATETIME_FORMAT': '%Y-%m-%dT%H:%M:%S.%fZ',
 }
+
+AZURE_AD_TENANT_ID = os.environ.get('AZURE_AD_TENANT_ID', '')
+AZURE_AD_CLIENT_ID = os.environ.get('AZURE_AD_CLIENT_ID', '')
 
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
