@@ -450,6 +450,38 @@ export async function getDashboardStats(): Promise<any> {
   return handleResponse(response);
 }
 
+// --- KPI & Dashboard API Placeholders ---
+export async function getFinanceSummary() {
+  return handleResponse(await authFetch(`${API_BASE}/dashboard/finance-summary`));
+}
+export async function getAccountsReceivableDays() {
+  return handleResponse(await authFetch(`${API_BASE}/dashboard/ar-days`));
+}
+export async function getProfitMargin() {
+  return handleResponse(await authFetch(`${API_BASE}/dashboard/profit-margin`));
+}
+export async function getCashFlow() {
+  return handleResponse(await authFetch(`${API_BASE}/dashboard/cash-flow`));
+}
+export async function getSafetySummary() {
+  return handleResponse(await authFetch(`${API_BASE}/dashboard/safety-summary`));
+}
+export async function getReworkCost() {
+  return handleResponse(await authFetch(`${API_BASE}/dashboard/rework-cost`));
+}
+export async function getResourceUtilization() {
+  return handleResponse(await authFetch(`${API_BASE}/dashboard/resource-utilization`));
+}
+export async function getSPIMap() {
+  return handleResponse(await authFetch(`${API_BASE}/dashboard/spi-map`));
+}
+export async function getProjectPortfolioMap() {
+  return handleResponse(await authFetch(`${API_BASE}/dashboard/project-map`));
+}
+export async function getTrendChart() {
+  return handleResponse(await authFetch(`${API_BASE}/dashboard/trend-chart`));
+}
+
 export interface SearchResult {
   id: string;
   type: 'contact' | 'product' | 'order' | 'ticket';
