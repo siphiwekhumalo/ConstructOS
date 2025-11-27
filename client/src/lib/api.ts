@@ -9,6 +9,13 @@ import type {
 
 const API_BASE = "/api/v1";
 
+interface PaginatedResponse<T> {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: T[];
+}
+
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: "Request failed" }));
@@ -17,9 +24,21 @@ async function handleResponse<T>(response: Response): Promise<T> {
   return response.json();
 }
 
+async function handleListResponse<T>(response: Response): Promise<T[]> {
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: "Request failed" }));
+    throw new Error(error.error || error.detail || "Request failed");
+  }
+  const data = await response.json();
+  if (data && typeof data === 'object' && 'results' in data) {
+    return (data as PaginatedResponse<T>).results;
+  }
+  return data as T[];
+}
+
 export async function getProjects(): Promise<Project[]> {
   const response = await fetch(`${API_BASE}/projects/`);
-  return handleResponse(response);
+  return handleListResponse(response);
 }
 
 export async function createProject(project: InsertProject): Promise<Project> {
@@ -47,32 +66,32 @@ export async function deleteProject(id: string): Promise<void> {
 
 export async function getEquipment(): Promise<Equipment[]> {
   const response = await fetch(`${API_BASE}/equipment/`);
-  return handleResponse(response);
+  return handleListResponse(response);
 }
 
 export async function getClients(): Promise<Client[]> {
   const response = await fetch(`${API_BASE}/clients/`);
-  return handleResponse(response);
+  return handleListResponse(response);
 }
 
 export async function getTransactions(): Promise<Transaction[]> {
   const response = await fetch(`${API_BASE}/transactions/`);
-  return handleResponse(response);
+  return handleListResponse(response);
 }
 
 export async function getDocuments(): Promise<Document[]> {
   const response = await fetch(`${API_BASE}/documents/`);
-  return handleResponse(response);
+  return handleListResponse(response);
 }
 
 export async function getSafetyInspections(): Promise<SafetyInspection[]> {
   const response = await fetch(`${API_BASE}/safety/inspections/`);
-  return handleResponse(response);
+  return handleListResponse(response);
 }
 
 export async function getLeads(): Promise<Lead[]> {
   const response = await fetch(`${API_BASE}/leads/`);
-  return handleResponse(response);
+  return handleListResponse(response);
 }
 
 export async function createLead(lead: InsertLead): Promise<Lead> {
@@ -100,7 +119,7 @@ export async function convertLead(id: string): Promise<{ contact: Contact; accou
 
 export async function getOpportunities(): Promise<Opportunity[]> {
   const response = await fetch(`${API_BASE}/opportunities/`);
-  return handleResponse(response);
+  return handleListResponse(response);
 }
 
 export async function createOpportunity(opportunity: InsertOpportunity): Promise<Opportunity> {
@@ -123,7 +142,7 @@ export async function updateOpportunity(id: string, updates: Partial<InsertOppor
 
 export async function getAccounts(): Promise<Account[]> {
   const response = await fetch(`${API_BASE}/accounts/`);
-  return handleResponse(response);
+  return handleListResponse(response);
 }
 
 export async function createAccount(account: InsertAccount): Promise<Account> {
@@ -137,7 +156,7 @@ export async function createAccount(account: InsertAccount): Promise<Account> {
 
 export async function getContacts(): Promise<Contact[]> {
   const response = await fetch(`${API_BASE}/contacts/`);
-  return handleResponse(response);
+  return handleListResponse(response);
 }
 
 export async function createContact(contact: InsertContact): Promise<Contact> {
@@ -151,7 +170,7 @@ export async function createContact(contact: InsertContact): Promise<Contact> {
 
 export async function getCampaigns(): Promise<Campaign[]> {
   const response = await fetch(`${API_BASE}/campaigns/`);
-  return handleResponse(response);
+  return handleListResponse(response);
 }
 
 export async function createCampaign(campaign: InsertCampaign): Promise<Campaign> {
@@ -165,7 +184,7 @@ export async function createCampaign(campaign: InsertCampaign): Promise<Campaign
 
 export async function getTickets(): Promise<Ticket[]> {
   const response = await fetch(`${API_BASE}/tickets/`);
-  return handleResponse(response);
+  return handleListResponse(response);
 }
 
 export async function createTicket(ticket: InsertTicket): Promise<Ticket> {
@@ -188,7 +207,7 @@ export async function updateTicket(id: string, updates: Partial<InsertTicket>): 
 
 export async function getProducts(): Promise<Product[]> {
   const response = await fetch(`${API_BASE}/products/`);
-  return handleResponse(response);
+  return handleListResponse(response);
 }
 
 export async function createProduct(product: InsertProduct): Promise<Product> {
@@ -202,12 +221,12 @@ export async function createProduct(product: InsertProduct): Promise<Product> {
 
 export async function getStockItems(): Promise<StockItem[]> {
   const response = await fetch(`${API_BASE}/stock/`);
-  return handleResponse(response);
+  return handleListResponse(response);
 }
 
 export async function getInvoices(): Promise<Invoice[]> {
   const response = await fetch(`${API_BASE}/invoices/`);
-  return handleResponse(response);
+  return handleListResponse(response);
 }
 
 export async function createInvoice(invoice: InsertInvoice): Promise<Invoice> {
@@ -221,7 +240,7 @@ export async function createInvoice(invoice: InsertInvoice): Promise<Invoice> {
 
 export async function getPayments(): Promise<Payment[]> {
   const response = await fetch(`${API_BASE}/payments/`);
-  return handleResponse(response);
+  return handleListResponse(response);
 }
 
 export async function createPayment(payment: InsertPayment): Promise<Payment> {
@@ -235,7 +254,7 @@ export async function createPayment(payment: InsertPayment): Promise<Payment> {
 
 export async function getEmployees(): Promise<Employee[]> {
   const response = await fetch(`${API_BASE}/employees/`);
-  return handleResponse(response);
+  return handleListResponse(response);
 }
 
 export async function createEmployee(employee: InsertEmployee): Promise<Employee> {
@@ -258,12 +277,12 @@ export async function updateEmployee(id: string, updates: Partial<InsertEmployee
 
 export async function getPayrollRecords(): Promise<PayrollRecord[]> {
   const response = await fetch(`${API_BASE}/payroll/`);
-  return handleResponse(response);
+  return handleListResponse(response);
 }
 
 export async function getLeaveRequests(): Promise<LeaveRequest[]> {
   const response = await fetch(`${API_BASE}/leave-requests/`);
-  return handleResponse(response);
+  return handleListResponse(response);
 }
 
 export async function createLeaveRequest(request: InsertLeaveRequest): Promise<LeaveRequest> {
@@ -277,7 +296,7 @@ export async function createLeaveRequest(request: InsertLeaveRequest): Promise<L
 
 export async function getSalesOrders(): Promise<SalesOrder[]> {
   const response = await fetch(`${API_BASE}/sales-orders/`);
-  return handleResponse(response);
+  return handleListResponse(response);
 }
 
 export async function createSalesOrder(order: InsertSalesOrder): Promise<SalesOrder> {
@@ -300,7 +319,7 @@ export async function updateSalesOrder(id: string, updates: Partial<InsertSalesO
 
 export async function getPurchaseOrders(): Promise<PurchaseOrder[]> {
   const response = await fetch(`${API_BASE}/purchase-orders/`);
-  return handleResponse(response);
+  return handleListResponse(response);
 }
 
 export async function createPurchaseOrder(order: InsertPurchaseOrder): Promise<PurchaseOrder> {
