@@ -33,14 +33,22 @@ Preferred communication style: Simple, everyday language.
 **Technology Stack:**
 - Python 3.11 with Django 5.2
 - Django REST Framework for API development
+- Gunicorn (production WSGI server) with 4 workers and gthread worker class
 - Express.js as API gateway/proxy (port 5000)
-- Django development server (port 8000)
+- Django backend (port 8000)
 
 **Design Decisions:**
 - **API Structure**: RESTful API design with versioned `/api/v1` endpoints. Django handles all business logic and database operations.
 - **Proxy Architecture**: Express serves as an API gateway, proxying `/api/v1/*` requests to Django while serving the React frontend via Vite.
-- **Development Setup**: Express spawns Django as a child process for unified development workflow. Both servers start with a single `npm run dev` command.
+- **Production Server**: Gunicorn serves Django in production with 4 workers and 2 threads each for better concurrency. Enable via `USE_GUNICORN=true` environment variable.
+- **Development Setup**: Express spawns Django (dev server or Gunicorn) as a child process for unified development workflow. Both servers start with a single `npm run dev` command.
 - **Request Logging**: Custom middleware logs API requests with timing, method, path, and status codes.
+
+**Environment Variables:**
+- `USE_GUNICORN=true` - Enable Gunicorn production server (default: Django dev server)
+- `GUNICORN_WORKERS=4` - Number of Gunicorn worker processes
+- `GUNICORN_THREADS=2` - Number of threads per worker
+- `GUNICORN_TIMEOUT=120` - Request timeout in seconds
 
 ### Django App Structure
 

@@ -1,6 +1,9 @@
 """
 Django management command to seed realistic mock data for ConstructOS.
 This generates comprehensive test data for a construction management company.
+
+Uses Faker with seeding for consistent, reproducible data generation.
+UUID maps are pre-generated to ensure referential integrity across services.
 """
 
 import uuid
@@ -11,6 +14,7 @@ from django.core.management.base import BaseCommand
 from django.utils import timezone
 from django.db import transaction
 from django.contrib.auth.hashers import make_password
+from faker import Faker
 
 from backend.apps.core.models import User, Event, AuditLog
 from backend.apps.crm.models import (
@@ -26,6 +30,20 @@ from backend.apps.construction.models import (
     Project, Transaction, Equipment, SafetyInspection, Document
 )
 
+SEED = 42
+fake = Faker()
+Faker.seed(SEED)
+random.seed(SEED)
+
+ACCOUNT_UUIDS = [str(uuid.UUID(int=random.getrandbits(128))) for _ in range(500)]
+CONTACT_UUIDS = [str(uuid.UUID(int=random.getrandbits(128))) for _ in range(2000)]
+PRODUCT_UUIDS = [str(uuid.UUID(int=random.getrandbits(128))) for _ in range(1000)]
+PROJECT_UUIDS = [str(uuid.UUID(int=random.getrandbits(128))) for _ in range(200)]
+EMPLOYEE_UUIDS = [str(uuid.UUID(int=random.getrandbits(128))) for _ in range(500)]
+USER_UUIDS = [str(uuid.UUID(int=random.getrandbits(128))) for _ in range(50)]
+INVOICE_UUIDS = [str(uuid.UUID(int=random.getrandbits(128))) for _ in range(1000)]
+EQUIPMENT_UUIDS = [str(uuid.UUID(int=random.getrandbits(128))) for _ in range(500)]
+
 
 class Command(BaseCommand):
     help = 'Seed database with realistic construction company data'
@@ -36,9 +54,20 @@ class Command(BaseCommand):
             action='store_true',
             help='Clear existing data before seeding',
         )
+        parser.add_argument(
+            '--volume',
+            type=str,
+            default='medium',
+            choices=['small', 'medium', 'large'],
+            help='Data volume: small (current), medium (5x), large (10x)',
+        )
 
     def handle(self, *args, **options):
         self.stdout.write('Starting data seed...')
+        
+        volume = options.get('volume', 'medium')
+        self.volume_multiplier = {'small': 1, 'medium': 5, 'large': 10}.get(volume, 1)
+        self.stdout.write(f'Volume: {volume} (multiplier: {self.volume_multiplier}x)')
         
         if options['clear']:
             self.clear_data()
@@ -77,8 +106,21 @@ class Command(BaseCommand):
             
             payroll = self.create_payroll_records(employees)
             leave_requests = self.create_leave_requests(employees, users)
-            
+        
+        self.print_summary()
         self.stdout.write(self.style.SUCCESS('Successfully seeded all data!'))
+    
+    def print_summary(self):
+        self.stdout.write('\n=== DATA SUMMARY ===')
+        self.stdout.write(f'Users: {User.objects.count()}')
+        self.stdout.write(f'Accounts: {Account.objects.count()}')
+        self.stdout.write(f'Contacts: {Contact.objects.count()}')
+        self.stdout.write(f'Products: {Product.objects.count()}')
+        self.stdout.write(f'Projects: {Project.objects.count()}')
+        self.stdout.write(f'Invoices: {Invoice.objects.count()}')
+        self.stdout.write(f'Employees: {Employee.objects.count()}')
+        self.stdout.write(f'Equipment: {Equipment.objects.count()}')
+        self.stdout.write('====================')
 
     def clear_data(self):
         self.stdout.write('Clearing existing data...')
@@ -97,7 +139,7 @@ class Command(BaseCommand):
 
     def create_users(self):
         self.stdout.write('Creating users...')
-        users_data = [
+        base_users = [
             {'username': 'admin', 'email': 'admin@constructos.com', 'first_name': 'System', 'last_name': 'Administrator', 'role': 'admin', 'department': 'IT'},
             {'username': 'jmartinez', 'email': 'j.martinez@constructos.com', 'first_name': 'James', 'last_name': 'Martinez', 'role': 'executive', 'department': 'Executive'},
             {'username': 'schen', 'email': 's.chen@constructos.com', 'first_name': 'Sarah', 'last_name': 'Chen', 'role': 'project_manager', 'department': 'Operations'},
@@ -109,83 +151,127 @@ class Command(BaseCommand):
         ]
         
         users = []
-        for data in users_data:
+        roles = ['admin', 'executive', 'project_manager', 'finance', 'warehouse', 'sales', 'safety']
+        departments = ['IT', 'Executive', 'Operations', 'Finance', 'Logistics', 'Sales', 'Safety', 'HR']
+        
+        for i, data in enumerate(base_users):
             user = User.objects.create(
-                id=str(uuid.uuid4()),
+                id=USER_UUIDS[i],
                 password=make_password('password123'),
                 **data
             )
             users.append(user)
+        
+        extra_users = 2 * self.volume_multiplier
+        for i in range(extra_users):
+            idx = len(base_users) + i
+            first = fake.first_name()
+            last = fake.last_name()
+            user = User.objects.create(
+                id=USER_UUIDS[idx] if idx < len(USER_UUIDS) else str(uuid.uuid4()),
+                username=f"{first[0].lower()}{last.lower()}{i}",
+                email=f"{first.lower()}.{last.lower()}{i}@constructos.com",
+                first_name=first,
+                last_name=last,
+                role=random.choice(roles),
+                department=random.choice(departments),
+                password=make_password('password123'),
+            )
+            users.append(user)
+        
         return users
 
     def create_accounts(self, users):
         self.stdout.write('Creating accounts...')
-        accounts_data = [
-            {'name': 'Meridian Development Group', 'legal_name': 'Meridian Development Group LLC', 'type': 'customer', 'industry': 'Real Estate Development', 'tier': 'Enterprise', 'annual_revenue': Decimal('85000000'), 'employee_count': 450, 'payment_terms': 'net_30', 'credit_limit': Decimal('500000'), 'account_number': 'ACC-001'},
-            {'name': 'Pacific Coast Builders', 'legal_name': 'Pacific Coast Builders Inc.', 'type': 'customer', 'industry': 'General Contractor', 'tier': 'Enterprise', 'annual_revenue': Decimal('120000000'), 'employee_count': 800, 'payment_terms': 'net_45', 'credit_limit': Decimal('750000'), 'account_number': 'ACC-002'},
-            {'name': 'Summit Construction Partners', 'legal_name': 'Summit Construction Partners LP', 'type': 'customer', 'industry': 'Commercial Construction', 'tier': 'Mid-Market', 'annual_revenue': Decimal('45000000'), 'employee_count': 280, 'payment_terms': 'net_30', 'credit_limit': Decimal('300000'), 'account_number': 'ACC-003'},
-            {'name': 'Bay Area Steel Supply', 'legal_name': 'Bay Area Steel Supply Corp', 'type': 'vendor', 'industry': 'Steel Manufacturing', 'tier': 'Strategic', 'annual_revenue': Decimal('200000000'), 'employee_count': 1200, 'payment_terms': 'net_15', 'credit_limit': Decimal('1000000'), 'account_number': 'ACC-004'},
-            {'name': 'Coastal Concrete Solutions', 'legal_name': 'Coastal Concrete Solutions Inc.', 'type': 'vendor', 'industry': 'Concrete Supply', 'tier': 'Preferred', 'annual_revenue': Decimal('35000000'), 'employee_count': 180, 'payment_terms': 'net_30', 'credit_limit': Decimal('250000'), 'account_number': 'ACC-005'},
-            {'name': 'TechBuild Systems', 'legal_name': 'TechBuild Systems LLC', 'type': 'customer', 'industry': 'Technology', 'tier': 'Mid-Market', 'annual_revenue': Decimal('28000000'), 'employee_count': 150, 'payment_terms': 'net_30', 'credit_limit': Decimal('200000'), 'account_number': 'ACC-006'},
-            {'name': 'Greenfield Municipal Authority', 'legal_name': 'City of Greenfield', 'type': 'customer', 'industry': 'Government', 'tier': 'Enterprise', 'annual_revenue': None, 'employee_count': 2500, 'payment_terms': 'net_60', 'credit_limit': Decimal('2000000'), 'account_number': 'ACC-007'},
-            {'name': 'Westside Equipment Rentals', 'legal_name': 'Westside Equipment Rentals LLC', 'type': 'vendor', 'industry': 'Equipment Rental', 'tier': 'Standard', 'annual_revenue': Decimal('12000000'), 'employee_count': 45, 'payment_terms': 'net_15', 'credit_limit': Decimal('100000'), 'account_number': 'ACC-008'},
-            {'name': 'Northern Electric Co.', 'legal_name': 'Northern Electric Company Inc.', 'type': 'vendor', 'industry': 'Electrical Supply', 'tier': 'Preferred', 'annual_revenue': Decimal('55000000'), 'employee_count': 320, 'payment_terms': 'net_30', 'credit_limit': Decimal('400000'), 'account_number': 'ACC-009'},
-            {'name': 'Harbor View Properties', 'legal_name': 'Harbor View Properties LP', 'type': 'customer', 'industry': 'Property Management', 'tier': 'Mid-Market', 'annual_revenue': Decimal('18000000'), 'employee_count': 75, 'payment_terms': 'net_30', 'credit_limit': Decimal('150000'), 'account_number': 'ACC-010'},
-            {'name': 'Mountain Ridge Developments', 'legal_name': 'Mountain Ridge Developments Inc.', 'type': 'prospect', 'industry': 'Residential Development', 'tier': 'Mid-Market', 'annual_revenue': Decimal('32000000'), 'employee_count': 120, 'payment_terms': 'net_30', 'credit_limit': Decimal('200000'), 'account_number': 'ACC-011'},
-            {'name': 'Allied Plumbing Systems', 'legal_name': 'Allied Plumbing Systems Corp', 'type': 'vendor', 'industry': 'Plumbing Supply', 'tier': 'Standard', 'annual_revenue': Decimal('22000000'), 'employee_count': 95, 'payment_terms': 'net_30', 'credit_limit': Decimal('150000'), 'account_number': 'ACC-012'},
-        ]
+        industries = ['Construction', 'Real Estate Development', 'General Contractor', 'Commercial Construction', 
+                     'Steel Manufacturing', 'Concrete Supply', 'Technology', 'Government', 'Equipment Rental',
+                     'Electrical Supply', 'Property Management', 'Residential Development', 'Plumbing Supply',
+                     'HVAC Systems', 'Roofing', 'Landscaping', 'Heavy Equipment', 'Safety Equipment']
+        tiers = ['Enterprise', 'Mid-Market', 'Strategic', 'Preferred', 'Standard']
+        types = ['customer', 'customer', 'customer', 'vendor', 'prospect']
+        payment_terms = ['net_15', 'net_30', 'net_45', 'net_60']
+        suffixes = ['Inc.', 'LLC', 'Corp', 'LP', 'Co.', 'Group', 'Partners', 'Systems', 'Solutions']
+        
+        base_count = 12
+        total_accounts = base_count * self.volume_multiplier
+        self.stdout.write(f'  Generating {total_accounts} accounts...')
         
         accounts = []
-        owner = random.choice(users)
-        for data in accounts_data:
+        for i in range(total_accounts):
+            company_name = fake.company()
+            clean_name = ''.join(c for c in company_name if c.isalnum() or c == ' ').strip()
+            domain = clean_name.lower().replace(' ', '')[:20]
+            
+            acct_type = random.choice(types)
+            tier = random.choice(tiers)
+            revenue = Decimal(random.randint(5, 200)) * Decimal('1000000') if random.random() > 0.1 else None
+            
             account = Account.objects.create(
-                id=str(uuid.uuid4()),
-                website=f"https://www.{data['name'].lower().replace(' ', '')}.com",
-                phone=f"+1 (555) {random.randint(100,999)}-{random.randint(1000,9999)}",
-                email=f"info@{data['name'].lower().replace(' ', '')}.com",
+                id=ACCOUNT_UUIDS[i] if i < len(ACCOUNT_UUIDS) else str(uuid.uuid4()),
+                name=company_name,
+                legal_name=f"{company_name} {random.choice(suffixes)}",
+                type=acct_type,
+                industry=random.choice(industries),
+                tier=tier,
+                annual_revenue=revenue,
+                employee_count=random.randint(10, 2000),
+                payment_terms=random.choice(payment_terms),
+                credit_limit=Decimal(random.randint(50, 2000)) * Decimal('1000'),
+                account_number=f"ACC-{str(i+1).zfill(5)}",
+                website=f"https://www.{domain}.com",
+                phone=fake.phone_number(),
+                email=f"info@{domain}.com",
                 status='active',
                 currency='USD',
                 owner=random.choice(users),
-                **data
             )
             accounts.append(account)
         
-        accounts[2].parent_account = accounts[1]
-        accounts[2].save()
+        for i in range(2, min(10, len(accounts)), 3):
+            accounts[i].parent_account = accounts[i-1]
+            accounts[i].save()
         
         return accounts
 
     def create_contacts(self, accounts, users):
         self.stdout.write('Creating contacts...')
-        first_names = ['John', 'Jennifer', 'Michael', 'Sarah', 'David', 'Lisa', 'Robert', 'Maria', 'William', 'Amanda', 'James', 'Patricia', 'Richard', 'Linda', 'Thomas', 'Barbara', 'Christopher', 'Elizabeth', 'Daniel', 'Susan', 'Matthew', 'Jessica', 'Anthony', 'Karen', 'Mark']
-        last_names = ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez', 'Hernandez', 'Lopez', 'Gonzalez', 'Wilson', 'Anderson', 'Thomas', 'Taylor', 'Moore', 'Jackson', 'Martin', 'Lee', 'Perez', 'Thompson', 'White', 'Harris']
-        titles = ['CEO', 'CFO', 'COO', 'VP of Operations', 'Project Director', 'Procurement Manager', 'Construction Manager', 'Site Supervisor', 'Finance Director', 'Purchasing Agent', 'Contract Administrator', 'Safety Director', 'Quality Manager', 'Engineering Manager', 'Estimator']
-        departments = ['Executive', 'Operations', 'Finance', 'Procurement', 'Engineering', 'Project Management', 'Safety', 'Quality Assurance', 'Administration']
+        titles = ['CEO', 'CFO', 'COO', 'VP of Operations', 'Project Director', 'Procurement Manager', 
+                 'Construction Manager', 'Site Supervisor', 'Finance Director', 'Purchasing Agent', 
+                 'Contract Administrator', 'Safety Director', 'Quality Manager', 'Engineering Manager', 
+                 'Estimator', 'Project Manager', 'Superintendent', 'Foreman']
+        departments = ['Executive', 'Operations', 'Finance', 'Procurement', 'Engineering', 
+                      'Project Management', 'Safety', 'Quality Assurance', 'Administration', 'HR']
+        sources = ['Website', 'Referral', 'Trade Show', 'LinkedIn', 'Cold Call', 'Partner', 'Inbound']
         
         contacts = []
-        for i, account in enumerate(accounts):
-            num_contacts = random.randint(2, 4)
+        contact_idx = 0
+        for account in accounts:
+            num_contacts = random.randint(2, 5)
+            clean_domain = ''.join(c for c in account.name if c.isalnum())[:15].lower()
+            
             for j in range(num_contacts):
-                first = random.choice(first_names)
-                last = random.choice(last_names)
-                email_domain = account.name.lower().replace(' ', '') + '.com'
+                first = fake.first_name()
+                last = fake.last_name()
                 contact = Contact.objects.create(
-                    id=str(uuid.uuid4()),
+                    id=CONTACT_UUIDS[contact_idx] if contact_idx < len(CONTACT_UUIDS) else str(uuid.uuid4()),
                     first_name=first,
                     last_name=last,
-                    email=f"{first.lower()}.{last.lower()}@{email_domain}",
-                    phone=f"+1 (555) {random.randint(100,999)}-{random.randint(1000,9999)}",
-                    mobile=f"+1 (555) {random.randint(100,999)}-{random.randint(1000,9999)}",
+                    email=f"{first.lower()}.{last.lower()}{contact_idx}@{clean_domain}.com",
+                    phone=fake.phone_number(),
+                    mobile=fake.phone_number(),
                     title=random.choice(titles),
                     department=random.choice(departments),
                     account=account,
                     is_primary=(j == 0),
                     preferred_communication=random.choice(['email', 'phone', 'email', 'email']),
                     status='active',
-                    source=random.choice(['Website', 'Referral', 'Trade Show', 'LinkedIn', 'Cold Call']),
+                    source=random.choice(sources),
                     owner=random.choice(users),
                 )
                 contacts.append(contact)
+                contact_idx += 1
+        
+        self.stdout.write(f'  Generated {len(contacts)} contacts')
         return contacts
 
     def create_addresses(self, accounts, contacts):
@@ -405,47 +491,49 @@ class Command(BaseCommand):
 
     def create_products(self):
         self.stdout.write('Creating products...')
-        products_data = [
-            {'sku': 'STL-BEAM-W8X31', 'name': 'Steel Wide Flange Beam W8x31', 'category': 'Structural Steel', 'unit': 'linear_foot', 'unit_price': Decimal('45.00'), 'cost_price': Decimal('32.00'), 'reorder_level': 100, 'reorder_quantity': 500},
-            {'sku': 'STL-BEAM-W12X40', 'name': 'Steel Wide Flange Beam W12x40', 'category': 'Structural Steel', 'unit': 'linear_foot', 'unit_price': Decimal('62.00'), 'cost_price': Decimal('44.00'), 'reorder_level': 75, 'reorder_quantity': 400},
-            {'sku': 'CON-RMX-4000PSI', 'name': 'Ready-Mix Concrete 4000 PSI', 'category': 'Concrete', 'unit': 'cubic_yard', 'unit_price': Decimal('145.00'), 'cost_price': Decimal('98.00'), 'reorder_level': 50, 'reorder_quantity': 200},
-            {'sku': 'CON-RMX-5000PSI', 'name': 'Ready-Mix Concrete 5000 PSI', 'category': 'Concrete', 'unit': 'cubic_yard', 'unit_price': Decimal('165.00'), 'cost_price': Decimal('112.00'), 'reorder_level': 40, 'reorder_quantity': 150},
-            {'sku': 'RBR-GR60-4', 'name': 'Rebar Grade 60 #4', 'category': 'Reinforcement', 'unit': 'ton', 'unit_price': Decimal('1150.00'), 'cost_price': Decimal('820.00'), 'reorder_level': 20, 'reorder_quantity': 100},
-            {'sku': 'RBR-GR60-6', 'name': 'Rebar Grade 60 #6', 'category': 'Reinforcement', 'unit': 'ton', 'unit_price': Decimal('1180.00'), 'cost_price': Decimal('845.00'), 'reorder_level': 20, 'reorder_quantity': 100},
-            {'sku': 'LUM-2X4-SPF', 'name': 'Lumber 2x4 SPF Stud Grade', 'category': 'Lumber', 'unit': 'board_foot', 'unit_price': Decimal('4.50'), 'cost_price': Decimal('2.80'), 'reorder_level': 500, 'reorder_quantity': 2000},
-            {'sku': 'LUM-PLY-3/4', 'name': 'Plywood 3/4" CDX Sheathing', 'category': 'Lumber', 'unit': 'sheet', 'unit_price': Decimal('52.00'), 'cost_price': Decimal('36.00'), 'reorder_level': 100, 'reorder_quantity': 500},
-            {'sku': 'ELC-WIRE-12AWG', 'name': 'Electrical Wire 12 AWG THHN', 'category': 'Electrical', 'unit': 'foot', 'unit_price': Decimal('0.85'), 'cost_price': Decimal('0.55'), 'reorder_level': 2000, 'reorder_quantity': 10000},
-            {'sku': 'ELC-PANEL-200A', 'name': 'Main Breaker Panel 200A', 'category': 'Electrical', 'unit': 'each', 'unit_price': Decimal('485.00'), 'cost_price': Decimal('325.00'), 'reorder_level': 10, 'reorder_quantity': 25},
-            {'sku': 'PLB-PIPE-CU-1', 'name': 'Copper Pipe Type L 1"', 'category': 'Plumbing', 'unit': 'linear_foot', 'unit_price': Decimal('12.50'), 'cost_price': Decimal('8.20'), 'reorder_level': 200, 'reorder_quantity': 1000},
-            {'sku': 'PLB-PIPE-PVC-4', 'name': 'PVC Drain Pipe Schedule 40 4"', 'category': 'Plumbing', 'unit': 'linear_foot', 'unit_price': Decimal('8.75'), 'cost_price': Decimal('5.40'), 'reorder_level': 300, 'reorder_quantity': 1500},
-            {'sku': 'HVC-DUCT-24X12', 'name': 'HVAC Ductwork 24"x12"', 'category': 'HVAC', 'unit': 'linear_foot', 'unit_price': Decimal('28.00'), 'cost_price': Decimal('18.50'), 'reorder_level': 100, 'reorder_quantity': 400},
-            {'sku': 'INS-BATT-R30', 'name': 'Fiberglass Insulation R-30', 'category': 'Insulation', 'unit': 'square_foot', 'unit_price': Decimal('1.85'), 'cost_price': Decimal('1.15'), 'reorder_level': 1000, 'reorder_quantity': 5000},
-            {'sku': 'DRY-GYP-1/2', 'name': 'Drywall Gypsum Board 1/2"', 'category': 'Drywall', 'unit': 'sheet', 'unit_price': Decimal('14.50'), 'cost_price': Decimal('9.20'), 'reorder_level': 200, 'reorder_quantity': 1000},
-            {'sku': 'HRD-BOLT-1/2X4', 'name': 'Hex Bolt Grade 5 1/2"x4"', 'category': 'Hardware', 'unit': 'box', 'unit_price': Decimal('45.00'), 'cost_price': Decimal('28.00'), 'reorder_level': 50, 'reorder_quantity': 200},
-            {'sku': 'HRD-ANCHOR-3/4', 'name': 'Wedge Anchor 3/4"x6"', 'category': 'Hardware', 'unit': 'box', 'unit_price': Decimal('125.00'), 'cost_price': Decimal('82.00'), 'reorder_level': 30, 'reorder_quantity': 100},
-            {'sku': 'SAF-HARNESS-FP', 'name': 'Fall Protection Harness', 'category': 'Safety Equipment', 'unit': 'each', 'unit_price': Decimal('185.00'), 'cost_price': Decimal('120.00'), 'reorder_level': 20, 'reorder_quantity': 50},
-            {'sku': 'SAF-HELMET-CL2', 'name': 'Hard Hat Class E Type II', 'category': 'Safety Equipment', 'unit': 'each', 'unit_price': Decimal('28.00'), 'cost_price': Decimal('16.00'), 'reorder_level': 50, 'reorder_quantity': 150},
-            {'sku': 'TOL-LASER-ROT', 'name': 'Rotary Laser Level Kit', 'category': 'Tools', 'unit': 'each', 'unit_price': Decimal('750.00'), 'cost_price': Decimal('485.00'), 'reorder_level': 5, 'reorder_quantity': 15},
-            {'sku': 'FRM-PLYWOOD-FORM', 'name': 'Concrete Form Plywood HDO', 'category': 'Formwork', 'unit': 'sheet', 'unit_price': Decimal('85.00'), 'cost_price': Decimal('58.00'), 'reorder_level': 75, 'reorder_quantity': 300},
-            {'sku': 'WTR-MEMBRANE-60', 'name': 'Waterproofing Membrane 60 mil', 'category': 'Waterproofing', 'unit': 'square_foot', 'unit_price': Decimal('3.25'), 'cost_price': Decimal('2.10'), 'reorder_level': 500, 'reorder_quantity': 2500},
-            {'sku': 'RNT-CRANE-50T', 'name': 'Crane Rental 50 Ton (Daily)', 'category': 'Equipment Rental', 'unit': 'day', 'unit_price': Decimal('2500.00'), 'cost_price': Decimal('1800.00'), 'reorder_level': 0, 'reorder_quantity': 0},
-            {'sku': 'RNT-EXCAV-CAT320', 'name': 'Excavator CAT 320 Rental (Daily)', 'category': 'Equipment Rental', 'unit': 'day', 'unit_price': Decimal('850.00'), 'cost_price': Decimal('600.00'), 'reorder_level': 0, 'reorder_quantity': 0},
-            {'sku': 'SVC-ENGINEERING', 'name': 'Structural Engineering Services', 'category': 'Professional Services', 'unit': 'hour', 'unit_price': Decimal('175.00'), 'cost_price': Decimal('125.00'), 'reorder_level': 0, 'reorder_quantity': 0},
-            {'sku': 'SVC-SURVEY', 'name': 'Land Survey Services', 'category': 'Professional Services', 'unit': 'hour', 'unit_price': Decimal('145.00'), 'cost_price': Decimal('95.00'), 'reorder_level': 0, 'reorder_quantity': 0},
-            {'sku': 'CON-GROUT-NSG', 'name': 'Non-Shrink Grout 50lb', 'category': 'Concrete', 'unit': 'bag', 'unit_price': Decimal('32.00'), 'cost_price': Decimal('21.00'), 'reorder_level': 100, 'reorder_quantity': 400},
-            {'sku': 'STL-DECK-3B20', 'name': 'Steel Deck 3" B Gauge 20', 'category': 'Structural Steel', 'unit': 'square_foot', 'unit_price': Decimal('4.80'), 'cost_price': Decimal('3.25'), 'reorder_level': 1000, 'reorder_quantity': 5000},
-            {'sku': 'WIN-DBL-6X4', 'name': 'Double Pane Window 6\'x4\'', 'category': 'Windows & Doors', 'unit': 'each', 'unit_price': Decimal('425.00'), 'cost_price': Decimal('285.00'), 'reorder_level': 15, 'reorder_quantity': 50},
-            {'sku': 'DOR-EXT-36', 'name': 'Exterior Steel Door 36"', 'category': 'Windows & Doors', 'unit': 'each', 'unit_price': Decimal('385.00'), 'cost_price': Decimal('255.00'), 'reorder_level': 10, 'reorder_quantity': 30},
+        categories = ['Structural Steel', 'Concrete', 'Reinforcement', 'Lumber', 'Electrical', 
+                     'Plumbing', 'HVAC', 'Insulation', 'Drywall', 'Hardware', 'Safety Equipment',
+                     'Tools', 'Formwork', 'Waterproofing', 'Equipment Rental', 'Professional Services',
+                     'Windows & Doors', 'Roofing', 'Flooring', 'Paint & Coatings']
+        units = ['linear_foot', 'cubic_yard', 'ton', 'board_foot', 'sheet', 'foot', 'each', 
+                'bag', 'square_foot', 'box', 'day', 'hour', 'gallon', 'roll']
+        
+        base_products = [
+            {'sku': 'STL-BEAM-W8X31', 'name': 'Steel Wide Flange Beam W8x31', 'category': 'Structural Steel', 'unit': 'linear_foot', 'unit_price': Decimal('45.00'), 'cost_price': Decimal('32.00')},
+            {'sku': 'CON-RMX-4000PSI', 'name': 'Ready-Mix Concrete 4000 PSI', 'category': 'Concrete', 'unit': 'cubic_yard', 'unit_price': Decimal('145.00'), 'cost_price': Decimal('98.00')},
+            {'sku': 'RBR-GR60-4', 'name': 'Rebar Grade 60 #4', 'category': 'Reinforcement', 'unit': 'ton', 'unit_price': Decimal('1150.00'), 'cost_price': Decimal('820.00')},
+            {'sku': 'LUM-2X4-SPF', 'name': 'Lumber 2x4 SPF Stud Grade', 'category': 'Lumber', 'unit': 'board_foot', 'unit_price': Decimal('4.50'), 'cost_price': Decimal('2.80')},
+            {'sku': 'ELC-WIRE-12AWG', 'name': 'Electrical Wire 12 AWG THHN', 'category': 'Electrical', 'unit': 'foot', 'unit_price': Decimal('0.85'), 'cost_price': Decimal('0.55')},
         ]
         
+        base_count = 30
+        total_products = base_count * self.volume_multiplier
+        self.stdout.write(f'  Generating {total_products} products...')
+        
+        sku_prefixes = ['STL', 'CON', 'RBR', 'LUM', 'ELC', 'PLB', 'HVC', 'INS', 'DRY', 'HRD', 
+                       'SAF', 'TOL', 'FRM', 'WTR', 'RNT', 'SVC', 'WIN', 'DOR', 'ROF', 'FLR']
+        
         products = []
-        for data in products_data:
+        for i in range(total_products):
+            category = random.choice(categories)
+            prefix = random.choice(sku_prefixes)
+            unit_price = Decimal(random.randint(1, 2500)) + Decimal(random.randint(0, 99)) / 100
+            cost_price = unit_price * Decimal('0.65')
+            
             product = Product.objects.create(
-                id=str(uuid.uuid4()),
-                description=f"High quality {data['name']} for construction projects",
-                **data
+                id=PRODUCT_UUIDS[i] if i < len(PRODUCT_UUIDS) else str(uuid.uuid4()),
+                sku=f"{prefix}-{str(i+1).zfill(5)}",
+                name=f"{category} Product {fake.word().title()} {i+1}",
+                description=f"High quality {category.lower()} product for construction projects",
+                category=category,
+                unit=random.choice(units),
+                unit_price=unit_price,
+                cost_price=cost_price,
+                reorder_level=random.randint(10, 500),
+                reorder_quantity=random.randint(50, 2000),
             )
             products.append(product)
+        
         return products
 
     def create_stock_items(self, products, warehouses):
@@ -456,8 +544,10 @@ class Command(BaseCommand):
             if product.reorder_level == 0:
                 continue
             for warehouse in warehouses:
-                qty = random.randint(int(product.reorder_level * 0.5), int(product.reorder_quantity * 1.2))
-                reserved = random.randint(0, int(qty * 0.3))
+                min_qty = max(10, int(product.reorder_level * 0.5))
+                max_qty = max(min_qty + 100, int(product.reorder_quantity * 1.2))
+                qty = random.randint(min_qty, max_qty)
+                reserved = random.randint(0, max(1, int(qty * 0.3)))
                 stock = StockItem.objects.create(
                     id=str(uuid.uuid4()),
                     product=product,

@@ -15,36 +15,82 @@ const viteLogger = createLogger();
 
 let djangoProcess: ChildProcess | null = null;
 
+const useGunicorn = process.env.USE_GUNICORN === "true";
+
 function startDjango(): Promise<void> {
   return new Promise((resolve, reject) => {
-    console.log("[Django] Starting Django development server...");
-    
-    djangoProcess = spawn("python", ["-m", "django", "runserver", "0.0.0.0:8000"], {
-      cwd: process.cwd(),
-      env: {
-        ...process.env,
-        DJANGO_SETTINGS_MODULE: "backend.settings",
-        PYTHONUNBUFFERED: "1",
-      },
-      stdio: ["ignore", "pipe", "pipe"],
-    });
+    if (useGunicorn) {
+      console.log("[Django] Starting Gunicorn production server...");
+      
+      djangoProcess = spawn("gunicorn", [
+        "backend.wsgi:application",
+        "--bind", "0.0.0.0:8000",
+        "--workers", "4",
+        "--threads", "2",
+        "--timeout", "120",
+        "--access-logfile", "-",
+        "--error-logfile", "-",
+        "--log-level", "info",
+        "--capture-output",
+      ], {
+        cwd: process.cwd(),
+        env: {
+          ...process.env,
+          DJANGO_SETTINGS_MODULE: "backend.settings",
+          PYTHONUNBUFFERED: "1",
+        },
+        stdio: ["ignore", "pipe", "pipe"],
+      });
 
-    djangoProcess.stdout?.on("data", (data) => {
-      const output = data.toString().trim();
-      if (output) {
-        console.log(`[Django] ${output}`);
-      }
-      if (output.includes("Starting development server") || output.includes("Watching for file changes")) {
-        resolve();
-      }
-    });
+      djangoProcess.stdout?.on("data", (data) => {
+        const output = data.toString().trim();
+        if (output) {
+          console.log(`[Gunicorn] ${output}`);
+        }
+        if (output.includes("Booting worker") || output.includes("Listening at")) {
+          resolve();
+        }
+      });
 
-    djangoProcess.stderr?.on("data", (data) => {
-      const output = data.toString().trim();
-      if (output) {
-        console.error(`[Django] ${output}`);
-      }
-    });
+      djangoProcess.stderr?.on("data", (data) => {
+        const output = data.toString().trim();
+        if (output) {
+          console.log(`[Gunicorn] ${output}`);
+        }
+        if (output.includes("Booting worker") || output.includes("Listening at")) {
+          resolve();
+        }
+      });
+    } else {
+      console.log("[Django] Starting Django development server...");
+      
+      djangoProcess = spawn("python", ["-m", "django", "runserver", "0.0.0.0:8000"], {
+        cwd: process.cwd(),
+        env: {
+          ...process.env,
+          DJANGO_SETTINGS_MODULE: "backend.settings",
+          PYTHONUNBUFFERED: "1",
+        },
+        stdio: ["ignore", "pipe", "pipe"],
+      });
+
+      djangoProcess.stdout?.on("data", (data) => {
+        const output = data.toString().trim();
+        if (output) {
+          console.log(`[Django] ${output}`);
+        }
+        if (output.includes("Starting development server") || output.includes("Watching for file changes")) {
+          resolve();
+        }
+      });
+
+      djangoProcess.stderr?.on("data", (data) => {
+        const output = data.toString().trim();
+        if (output) {
+          console.error(`[Django] ${output}`);
+        }
+      });
+    }
 
     djangoProcess.on("error", (err) => {
       console.error("[Django] Failed to start:", err.message);
@@ -61,7 +107,7 @@ function startDjango(): Promise<void> {
         console.log("[Django] Server started (timeout)");
         resolve();
       }
-    }, 5000);
+    }, 8000);
   });
 }
 
