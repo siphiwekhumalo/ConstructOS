@@ -497,3 +497,139 @@ export async function removeFavorite(id: string): Promise<void> {
   const response = await authFetch(`${API_BASE}/favorites/${id}/`, { method: "DELETE" });
   if (!response.ok) throw new Error("Failed to remove favorite");
 }
+
+export interface AIHealthResponse {
+  status: string;
+  models: Record<string, {
+    model_name: string;
+    model_version: string;
+    trained_at: string;
+    accuracy: number;
+  }>;
+}
+
+export interface CreditRiskPrediction {
+  customer_id: string;
+  customer_name: string | null;
+  risk_score: number;
+  risk_level: 'low' | 'medium' | 'high' | 'critical';
+  confidence: number;
+  factors: string[];
+  recommended_payment_terms: string;
+  recommended_credit_limit: number;
+  model_info: { model_name: string; model_version: string; trained_at: string; accuracy: number };
+  predicted_at: string;
+}
+
+export interface LeadScorePrediction {
+  lead_id: string;
+  lead_name: string | null;
+  score: number;
+  conversion_probability: number;
+  priority: 'hot' | 'warm' | 'qualified' | 'cold';
+  factors: string[];
+  recommended_actions: string[];
+  model_info: { model_name: string; model_version: string; trained_at: string; accuracy: number };
+  predicted_at: string;
+}
+
+export interface ProjectDelayPrediction {
+  project_id: string;
+  project_name: string | null;
+  delay_probability: number;
+  expected_delay_days: number;
+  risk_level: 'low' | 'medium' | 'high' | 'critical';
+  risk_factors: string[];
+  mitigation_suggestions: string[];
+  model_info: { model_name: string; model_version: string; trained_at: string; accuracy: number };
+  predicted_at: string;
+}
+
+export interface MaintenanceRiskPrediction {
+  equipment_id: string;
+  equipment_name: string | null;
+  failure_probability: number;
+  risk_level: 'low' | 'medium' | 'high' | 'critical';
+  estimated_remaining_life_days: number;
+  recommended_maintenance_date: string;
+  maintenance_type: string;
+  estimated_downtime_hours: number;
+  parts_needed: string[];
+  model_info: { model_name: string; model_version: string; trained_at: string; accuracy: number };
+  predicted_at: string;
+}
+
+export interface DemandForecastPrediction {
+  product_id: string;
+  product_name: string | null;
+  warehouse_id: string | null;
+  forecast: Array<{
+    date: string;
+    predicted_demand: number;
+    confidence_lower: number;
+    confidence_upper: number;
+  }>;
+  current_stock: number;
+  reorder_point: number;
+  suggested_order_quantity: number;
+  stockout_risk_date: string | null;
+  model_info: { model_name: string; model_version: string; trained_at: string; accuracy: number };
+  predicted_at: string;
+}
+
+export interface CashFlowForecast {
+  forecast: Array<{
+    date: string;
+    predicted_inflow: number;
+    predicted_outflow: number;
+    net_cash_flow: number;
+    confidence_lower: number;
+    confidence_upper: number;
+  }>;
+  summary: {
+    total_predicted_inflow: number;
+    total_predicted_outflow: number;
+    net_cash_flow: number;
+    average_daily_balance: number;
+  };
+  model_info: { model_name: string; model_version: string; trained_at: string; accuracy: number };
+  predicted_at: string;
+}
+
+export async function getAIHealth(): Promise<AIHealthResponse> {
+  const response = await authFetch(`${API_BASE}/ai/health/`);
+  return handleResponse(response);
+}
+
+export async function getCreditRiskPrediction(customerId: string): Promise<CreditRiskPrediction> {
+  const response = await authFetch(`${API_BASE}/ai/credit-risk/predict/${customerId}/`);
+  return handleResponse(response);
+}
+
+export async function getLeadScore(leadId: string): Promise<LeadScorePrediction> {
+  const response = await authFetch(`${API_BASE}/ai/leads/score/${leadId}/`);
+  return handleResponse(response);
+}
+
+export async function getProjectDelayPrediction(projectId: string): Promise<ProjectDelayPrediction> {
+  const response = await authFetch(`${API_BASE}/ai/projects/delay-risk/${projectId}/`);
+  return handleResponse(response);
+}
+
+export async function getMaintenanceRiskPrediction(equipmentId: string): Promise<MaintenanceRiskPrediction> {
+  const response = await authFetch(`${API_BASE}/ai/equipment/maintenance-risk/${equipmentId}/`);
+  return handleResponse(response);
+}
+
+export async function getDemandForecast(productId: string): Promise<DemandForecastPrediction> {
+  const response = await authFetch(`${API_BASE}/ai/inventory/demand-forecast/${productId}/`);
+  return handleResponse(response);
+}
+
+export async function getCashFlowForecast(daysAhead: number = 30): Promise<CashFlowForecast> {
+  const response = await authFetch(`${API_BASE}/ai/cashflow/forecast/`, {
+    method: "POST",
+    body: JSON.stringify({ days_ahead: daysAhead }),
+  });
+  return handleResponse(response);
+}

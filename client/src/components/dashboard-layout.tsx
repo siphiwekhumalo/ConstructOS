@@ -15,7 +15,8 @@ import {
   UserCog,
   ShoppingCart,
   Headphones,
-  Star
+  Star,
+  Brain
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -36,6 +37,7 @@ const navItems = [
   { label: "HR", icon: UserCog, href: "/dashboard/hr" },
   { label: "Support", icon: Headphones, href: "/dashboard/support" },
   { label: "Reports", icon: BarChart3, href: "/dashboard/reports" },
+  { label: "AI Insights", icon: Brain, href: "/dashboard/ai" },
 ];
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
