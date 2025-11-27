@@ -3,6 +3,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny
+from rest_framework.authentication import SessionAuthentication
 from django.db.models import Q
 from .models import User, Event, AuditLog, Favorite
 from .serializers import UserSerializer, UserCreateSerializer, EventSerializer, AuditLogSerializer, FavoriteSerializer
@@ -273,33 +274,35 @@ class CacheStatsView(APIView):
 class SecurityEventsView(APIView):
     """
     View security events for monitoring and incident response.
-    Requires system_admin or executive role.
+    Requires system_admin role via DRF permission class.
+    
+    DRF handles authentication and permission checks automatically.
+    If user is not authenticated, DRF returns 401.
+    If user lacks permission, IsSystemAdmin returns 403.
     """
+    authentication_classes = [SessionAuthentication]
     permission_classes = [IsSystemAdmin]
     
     def get(self, request):
-        user_id = request.session.get('user_id')
-        if not user_id:
-            return Response({'error': 'Authentication required'}, status=status.HTTP_401_UNAUTHORIZED)
+        user = request.user
         
-        try:
-            user = User.objects.get(id=user_id)
-            if user.role not in ['system_admin', 'executive']:
-                SecurityLogger.log(
-                    SecurityEventType.PERMISSION_DENIED,
-                    user_id=str(user.id),
-                    endpoint='/api/v1/security/events/',
-                    method='GET',
-                    status_code=403,
-                    severity='WARNING'
-                )
-                return Response({'error': 'Access denied'}, status=status.HTTP_403_FORBIDDEN)
-        except User.DoesNotExist:
-            return Response({'error': 'User not found'}, status=status.HTTP_401_UNAUTHORIZED)
+        SecurityLogger.log(
+            SecurityEventType.SENSITIVE_ACCESS,
+            user_id=str(user.id),
+            endpoint='/api/v1/security/events/',
+            method='GET',
+            status_code=200,
+            severity='INFO',
+            details={'action': 'view_security_events'}
+        )
         
         event_type = request.query_params.get('type')
         filter_user_id = request.query_params.get('user_id')
-        limit = int(request.query_params.get('limit', 100))
+        
+        try:
+            limit = min(int(request.query_params.get('limit', 100)), 1000)
+        except (ValueError, TypeError):
+            limit = 100
         
         events = SecurityLogger.get_recent_events(
             event_type=event_type,
@@ -324,27 +327,31 @@ class SecurityEventsView(APIView):
                 SecurityEventType.SENSITIVE_ACCESS,
                 SecurityEventType.AFTER_HOURS_ACCESS,
             ]
-        })
+        }, status=status.HTTP_200_OK)
 
 
 class SecurityDashboardView(APIView):
     """
     Security dashboard with metrics and alerts.
     Provides summary of security events for monitoring.
+    
+    DRF handles authentication and permission checks automatically.
     """
+    authentication_classes = [SessionAuthentication]
     permission_classes = [IsSystemAdmin]
     
     def get(self, request):
-        user_id = request.session.get('user_id')
-        if not user_id:
-            return Response({'error': 'Authentication required'}, status=status.HTTP_401_UNAUTHORIZED)
+        user = request.user
         
-        try:
-            user = User.objects.get(id=user_id)
-            if user.role not in ['system_admin', 'executive']:
-                return Response({'error': 'Access denied'}, status=status.HTTP_403_FORBIDDEN)
-        except User.DoesNotExist:
-            return Response({'error': 'User not found'}, status=status.HTTP_401_UNAUTHORIZED)
+        SecurityLogger.log(
+            SecurityEventType.SENSITIVE_ACCESS,
+            user_id=str(user.id),
+            endpoint='/api/v1/security/dashboard/',
+            method='GET',
+            status_code=200,
+            severity='INFO',
+            details={'action': 'view_security_dashboard'}
+        )
         
         all_events = SecurityLogger.get_recent_events(limit=1000)
         
@@ -397,53 +404,69 @@ class SecurityDashboardView(APIView):
             'recent_critical': critical_alerts,
             'recent_brute_force': brute_force,
             'recent_anomalies': anomalies,
-        })
+        }, status=status.HTTP_200_OK)
 
 
 class ForceLogoutView(APIView):
     """
     Force logout a user by invalidating all their tokens.
-    Requires system_admin role.
+    Requires system_admin role via DRF permission class.
+    
+    DRF handles authentication and permission checks automatically.
     """
+    authentication_classes = [SessionAuthentication]
     permission_classes = [IsSystemAdmin]
     
     def post(self, request):
-        admin_user_id = request.session.get('user_id')
-        if not admin_user_id:
-            SecurityLogger.log(
-                SecurityEventType.PERMISSION_DENIED,
-                endpoint='/api/v1/security/force-logout/',
-                method='POST',
-                status_code=401,
-                severity='WARNING',
-                details={'reason': 'no_session'}
-            )
-            return Response({'error': 'Authentication required'}, status=status.HTTP_401_UNAUTHORIZED)
-        
-        try:
-            admin_user = User.objects.get(id=admin_user_id)
-            if admin_user.role != 'system_admin':
-                SecurityLogger.log(
-                    SecurityEventType.PERMISSION_DENIED,
-                    user_id=str(admin_user.id),
-                    endpoint='/api/v1/security/force-logout/',
-                    method='POST',
-                    status_code=403,
-                    severity='WARNING',
-                    details={'reason': 'insufficient_privileges', 'role': admin_user.role}
-                )
-                return Response({'error': 'Access denied. System admin role required.'}, status=status.HTTP_403_FORBIDDEN)
-        except User.DoesNotExist:
-            return Response({'error': 'User not found'}, status=status.HTTP_401_UNAUTHORIZED)
+        admin_user = request.user
         
         target_user_id = request.data.get('user_id')
         if not target_user_id:
-            return Response({'error': 'user_id is required'}, status=status.HTTP_400_BAD_REQUEST)
+            SecurityLogger.log(
+                SecurityEventType.SENSITIVE_ACCESS,
+                user_id=str(admin_user.id),
+                endpoint='/api/v1/security/force-logout/',
+                method='POST',
+                status_code=400,
+                severity='WARNING',
+                details={'error': 'missing_user_id'}
+            )
+            return Response(
+                {'error': 'user_id is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            from uuid import UUID
+            UUID(str(target_user_id))
+        except (ValueError, TypeError):
+            return Response(
+                {'error': 'Invalid user_id format'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
         
         try:
             target_user = User.objects.get(id=target_user_id)
         except User.DoesNotExist:
-            return Response({'error': 'Target user not found'}, status=status.HTTP_404_NOT_FOUND)
+            SecurityLogger.log(
+                SecurityEventType.SENSITIVE_ACCESS,
+                user_id=str(admin_user.id),
+                endpoint='/api/v1/security/force-logout/',
+                method='POST',
+                status_code=404,
+                severity='INFO',
+                details={'error': 'target_not_found', 'target_id': str(target_user_id)}
+            )
+            return Response(
+                {'error': 'Target user not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        if str(target_user.id) == str(admin_user.id):
+            return Response(
+                {'error': 'Cannot force logout yourself. Use the regular logout endpoint.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
         
         success = TokenBlacklist.blacklist_all_user_tokens(
             str(target_user.id),
@@ -451,6 +474,18 @@ class ForceLogoutView(APIView):
         )
         
         if not success:
+            SecurityLogger.log(
+                SecurityEventType.SENSITIVE_ACCESS,
+                user_id=str(admin_user.id),
+                endpoint='/api/v1/security/force-logout/',
+                method='POST',
+                status_code=500,
+                severity='ERROR',
+                details={
+                    'error': 'token_blacklist_failed',
+                    'target_user_id': str(target_user.id)
+                }
+            )
             return Response(
                 {'error': 'Failed to invalidate tokens. Please try again.'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -476,4 +511,4 @@ class ForceLogoutView(APIView):
             'message': f'User {target_user.username} has been forcefully logged out',
             'user_id': str(target_user.id),
             'tokens_invalidated': True,
-        })
+        }, status=status.HTTP_200_OK)
