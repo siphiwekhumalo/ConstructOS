@@ -43,17 +43,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const apiProxy = createProxyMiddleware({
     target: DJANGO_BACKEND_URL,
     changeOrigin: true,
+    pathRewrite: (_path, req) => {
+      return req.originalUrl || _path;
+    },
     on: {
-      proxyReq: (proxyReq, req) => {
-        const expressReq = req as Request;
-        if (expressReq.body && Object.keys(expressReq.body).length > 0) {
-          const bodyData = JSON.stringify(expressReq.body);
-          proxyReq.setHeader('Content-Type', 'application/json');
-          proxyReq.setHeader('Content-Length', Buffer.byteLength(bodyData));
-          proxyReq.write(bodyData);
-          proxyReq.end();
-        }
-      },
       error: (err, req, res) => {
         console.error('[API Proxy Error]', err.message);
         const serverRes = res as Response;
