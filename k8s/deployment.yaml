@@ -1,0 +1,141 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: constructos
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: constructos-config
+  namespace: constructos
+data:
+  DJANGO_SETTINGS_MODULE: "backend.settings"
+  USE_GUNICORN: "true"
+  GUNICORN_WORKERS: "4"
+  GUNICORN_THREADS: "2"
+  GUNICORN_TIMEOUT: "120"
+  DEBUG: "false"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: constructos-secrets
+  namespace: constructos
+type: Opaque
+stringData:
+  DATABASE_URL: "${DATABASE_URL}"
+  SECRET_KEY: "${SECRET_KEY}"
+  AZURE_AD_TENANT_ID: "${AZURE_AD_TENANT_ID}"
+  AZURE_AD_CLIENT_ID: "${AZURE_AD_CLIENT_ID}"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: constructos-api
+  namespace: constructos
+  labels:
+    app: constructos
+    component: api
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: constructos
+      component: api
+  template:
+    metadata:
+      labels:
+        app: constructos
+        component: api
+    spec:
+      containers:
+        - name: constructos
+          image: constructos.azurecr.io/constructos:latest
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: constructos-config
+            - secretRef:
+                name: constructos-secrets
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          readinessProbe:
+            httpGet:
+              path: /api/v1/auth/me/
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /api/v1/auth/me/
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
+      imagePullSecrets:
+        - name: acr-secret
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: constructos-api
+  namespace: constructos
+  labels:
+    app: constructos
+    component: api
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 80
+      targetPort: 8000
+      protocol: TCP
+  selector:
+    app: constructos
+    component: api
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: constructos-api-hpa
+  namespace: constructos
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: constructos-api
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: constructos-api-pdb
+  namespace: constructos
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: constructos
+      component: api

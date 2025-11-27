@@ -1,0 +1,38 @@
+Your existing technology stack (React, Django, PostgreSQL, Express.js Gateway, Entra ID) provides an excellent foundation for scalability. To achieve global scale and world-class stability for ConstructOS, you need to focus on adding specialized infrastructure and data technologies that handle distributed computing, low-latency delivery, and geographic redundancy.
+
+Here are the key technologies you now need to integrate across the frontend and backend.
+
+💻 Frontend Technologies (Speed and Global Delivery)
+The goal of the frontend stack for global scale is to deliver the user interface and data as fast as possible to every Site Manager and Finance User, regardless of their location (e.g., South Africa, Europe, US).
+
+Technology/Concept	Purpose	Integration
+Content Delivery Network (CDN)	Caching static assets (HTML, JavaScript bundles, images, CSS) geographically close to the user to minimize latency.	Integrate a service like Azure CDN or Cloudflare. Your Vite build output and the React static files are pushed to the CDN edge locations, ensuring the app loads instantly worldwide.
+Server-Side Rendering (SSR) / Static Site Generation (SSG)	Reduces Time-To-First-Byte (TTFB) and improves SEO (though less critical for an internal app, it aids initial load).	Implement Next.js or a similar framework if you want to move beyond pure CSR (Client-Side Rendering) for initial page loads, or use a CDN Edge Worker to handle pre-rendering.
+Global State Management	Handles complex state across multiple cross-service API calls without excessive prop drilling.	You are using TanStack Query (React Query), which is excellent. Focus on its caching, stale-while-revalidate, and query invalidation features to minimize unnecessary network calls to the backend services.
+Internationalization (i18n)	Support multiple languages and regional formats (e.g., date, currency display).	Use a library like react-i18next or formatjs to manage translation files and ensure ZAR is displayed correctly alongside other currencies if Melach Construction expands internationally.
+
+Export to Sheets
+
+🐍 Backend Technologies (Stability and Elasticity)
+The backend needs robust technologies to handle millions of transactions, decouple the microservices further, and ensure zero downtime.
+
+1. ⚙️ Orchestration and Infrastructure
+Technology	Purpose	Impact on ConstructOS
+Kubernetes (AKS)	The essential tool for container orchestration. It automates deployment, scaling (Horizontal Pod Autoscaler), and self-healing.	Enables ConstructOS microservices (Django, Express.js Gateway, FastAPI ML) to be scaled independently based on demand (e.g., scaling the Order Service during peak PO creation).
+Service Mesh (e.g., Istio, Linkerd)	Manages complex inter-service communication (security, traffic routing, monitoring) without modifying microservice code.	Provides circuit breakers and retries between your Django services, preventing a failure in one service (e.g., temporary Finance database overload) from causing the entire application to crash.
+Asynchronous Message Broker	You are already using RabbitMQ with Celery, which is critical for decoupling (e.g., Sales Order creation triggering background Inventory reservation).	Ensure RabbitMQ is configured for high-availability clustering and deployed across multiple availability zones.
+
+Export to Sheets
+
+2. 🗃️ Data and Caching Layers
+Technology	Purpose	Impact on ConstructOS
+Distributed Caching (Redis/Memcached)	Stores frequently accessed, non-transactional data (e.g., product pricing, Entra ID session tokens, user roles) across multiple servers.	Drastically reduces load on your PostgreSQL databases and accelerates response times. All user requests should hit the Redis cache before querying the database.
+Geographic Redundancy (Multi-Region DB)	Ensures data is synchronized and available across different geographic regions (e.g., a primary database in South Africa and a read replica in Europe).	Use PostgreSQL with Read Replicas or cloud-native solutions like Azure Database for PostgreSQL (Flexible Server) to handle disaster recovery and provide low-latency reads for users closer to the replica.
+Object Storage (Azure Blob Storage)	Highly scalable, low-cost storage for unstructured data (documents, images, videos, backups).	Critical for your Document Management module. Documents are uploaded here, and your Django Document Service only stores the secure link and metadata.
+
+Export to Sheets
+
+3. 🛡️ Observability
+Technology	Purpose	Impact on ConstructOS
+Distributed Tracing (e.g., Jaeger, OpenTelemetry)	Tracks a single request as it hops across the Express.js Gateway and all your Django microservices.	Essential for diagnosing performance bottlenecks. If a Quote-to-Order process is slow, tracing shows exactly which microservice (Sales, Inventory, or RabbitMQ queue) is the bottleneck.
+Centralized Logging (ELK/Loki/Grafana)	Aggregates logs from all eight Gunicorn-running Django containers into a single searchable interface.	Crucial for stability. If the HR Service throws an error at 2 AM, the DevOps team can search all logs immediately without logging into eight separate servers.
