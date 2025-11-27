@@ -60,7 +60,7 @@ jobs:
       run: npm ci
       working-directory: ./client
     - name: 🏃 Run Frontend Unit Tests (Jest)
-      run: npm test -- --coverage --ci --testResultsProcessor="jest-junit"
+      run: npx jest --config jest.config.cjs --coverage --ci --testResultsProcessor=jest-junit
       working-directory: ./client
 
     # --- End-to-End UI Tests (Playwright) ---
