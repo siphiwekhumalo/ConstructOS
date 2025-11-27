@@ -20,6 +20,7 @@ import DashboardHR from "@/pages/dashboard/hr";
 import DashboardOrders from "@/pages/dashboard/orders";
 import DashboardSupport from "@/pages/dashboard/support";
 import DashboardAI from "@/pages/dashboard/ai";
+import DashboardChat from "@/pages/dashboard/chat";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -40,6 +41,7 @@ function Router() {
       <Route path="/dashboard/orders" component={DashboardOrders} />
       <Route path="/dashboard/support" component={DashboardSupport} />
       <Route path="/dashboard/ai" component={DashboardAI} />
+      <Route path="/dashboard/chat" component={DashboardChat} />
       <Route component={NotFound} />
     </Switch>
   );

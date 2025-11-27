@@ -14,6 +14,7 @@ import viteConfig from "../vite.config";
 const viteLogger = createLogger();
 
 let djangoProcess: ChildProcess | null = null;
+let daphneProcess: ChildProcess | null = null;
 
 const useGunicorn = process.env.USE_GUNICORN === "true";
 
@@ -119,13 +120,80 @@ function stopDjango() {
   }
 }
 
+function startDaphne(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    console.log("[Daphne] Starting Daphne WebSocket server on port 8001...");
+    
+    daphneProcess = spawn("daphne", [
+      "-b", "0.0.0.0",
+      "-p", "8001",
+      "backend.asgi:application"
+    ], {
+      cwd: process.cwd(),
+      env: {
+        ...process.env,
+        DJANGO_SETTINGS_MODULE: "backend.settings",
+        PYTHONUNBUFFERED: "1",
+      },
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+
+    daphneProcess.stdout?.on("data", (data) => {
+      const output = data.toString().trim();
+      if (output) {
+        console.log(`[Daphne] ${output}`);
+      }
+      if (output.includes("Listening on") || output.includes("Starting server")) {
+        resolve();
+      }
+    });
+
+    daphneProcess.stderr?.on("data", (data) => {
+      const output = data.toString().trim();
+      if (output) {
+        console.log(`[Daphne] ${output}`);
+      }
+      if (output.includes("Listening on") || output.includes("Starting server")) {
+        resolve();
+      }
+    });
+
+    daphneProcess.on("error", (err) => {
+      console.error("[Daphne] Failed to start:", err.message);
+      reject(err);
+    });
+
+    daphneProcess.on("close", (code) => {
+      console.log(`[Daphne] Process exited with code ${code}`);
+      daphneProcess = null;
+    });
+
+    setTimeout(() => {
+      if (daphneProcess) {
+        console.log("[Daphne] Server started (timeout)");
+        resolve();
+      }
+    }, 5000);
+  });
+}
+
+function stopDaphne() {
+  if (daphneProcess) {
+    console.log("[Daphne] Stopping Daphne server...");
+    daphneProcess.kill("SIGTERM");
+    daphneProcess = null;
+  }
+}
+
 process.on("SIGTERM", () => {
   stopDjango();
+  stopDaphne();
   process.exit(0);
 });
 
 process.on("SIGINT", () => {
   stopDjango();
+  stopDaphne();
   process.exit(0);
 });
 
@@ -182,6 +250,13 @@ export async function setupVite(app: Express, server: Server) {
     console.log("[Express] Django backend started, starting Express gateway...");
   } catch (err) {
     console.error("[Express] Warning: Django backend failed to start, API calls will fail");
+  }
+
+  try {
+    await startDaphne();
+    console.log("[Express] Daphne WebSocket server started on port 8001");
+  } catch (err) {
+    console.error("[Express] Warning: Daphne failed to start, WebSocket connections will fail");
   }
   
   await runApp(setupVite);
