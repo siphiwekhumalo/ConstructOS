@@ -2,17 +2,12 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, ShieldCheck, Cpu, Activity } from "lucide-react";
 import heroImage from "@assets/generated_images/futuristic_construction_site_with_digital_overlay.png";
-import { Suspense, lazy } from "react";
-
-const ThreeHeroBackground = lazy(() => import("@/components/three-background").then(m => ({ default: m.ThreeHeroBackground })));
 
 export function Hero() {
   return (
     <section className="relative min-h-screen flex items-center pt-20 overflow-hidden border-b border-border">
-      {/* 3D Particle Background - Lazy loaded */}
-      <Suspense fallback={<div className="absolute inset-0 -z-10 bg-gradient-to-br from-primary/5 to-transparent" />}>
-        <ThreeHeroBackground />
-      </Suspense>
+      {/* Gradient Background */}
+      <div className="absolute inset-0 -z-10 bg-gradient-to-br from-primary/10 via-transparent to-accent/5" />
       
       {/* Grid Background */}
       <div className="absolute inset-0 grid-bg opacity-20 pointer-events-none" />
