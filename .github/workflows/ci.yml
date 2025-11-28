@@ -47,10 +47,6 @@ jobs:
       run: |
         python manage.py migrate --settings=backend.settings
 
-    - name: Run tests
-      run: |
-        npx jest --config jest.config.cjs --coverage --ci --testResultsProcessor=jest-junit
-
     # --- React Frontend (Jest) ---
     - name: 🟢 Setup Node.js and Install React Dependencies
       uses: actions/setup-node@v4
@@ -59,6 +55,9 @@ jobs:
     - name: ⚛️ Install Frontend Dependencies (Jest)
       run: npm ci
       working-directory: ./client
+    - name: 📦 Install Node Dependencies (Root)
+      run: npm ci
+      working-directory: .
     - name: 🏃 Run Frontend Unit Tests (Jest)
       run: npx jest --config jest.config.cjs --coverage --ci --testResultsProcessor=jest-junit
       working-directory: ./client
