@@ -6,3 +6,4 @@ psycopg2-binary
 gunicorn
 pytest
 celery
+django_extensions
