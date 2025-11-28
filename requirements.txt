@@ -7,3 +7,4 @@ gunicorn
 pytest
 celery
 django_extensions
+python-dotenv
