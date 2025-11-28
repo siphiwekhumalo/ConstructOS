@@ -14,15 +14,38 @@ import {
   Activity
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { getProjects, getTransactions, getClients, getEquipment } from "@/lib/api";
+import { getProjects, getTransactions, getClients, getEquipment, 
+  getFinanceSummary, getAccountsReceivableDays, getProfitMargin, getCashFlow, 
+  getSafetySummary, getReworkCost, getResourceUtilization, getSPIMap, 
+  getProjectPortfolioMap, getTrendChart 
+} from "@/lib/api";
 import { Link } from "wouter";
 import { formatCurrency, formatCurrencyCompact } from "@/lib/currency";
+import { ProfitMarginChart, BudgetTrendChart, ProjectPortfolioMap } from "@/components/DashboardCharts";
 
 export default function DashboardOverview() {
   const { data: projects } = useQuery({ queryKey: ["projects"], queryFn: getProjects });
   const { data: transactions } = useQuery({ queryKey: ["transactions"], queryFn: getTransactions });
   const { data: clients } = useQuery({ queryKey: ["clients"], queryFn: getClients });
   const { data: equipment } = useQuery({ queryKey: ["equipment"], queryFn: getEquipment });
+
+  // --- Executive Financial Health KPIs ---
+  const { data: finance } = useQuery({ queryKey: ["finance"], queryFn: getFinanceSummary });
+  const { data: arDays } = useQuery({ queryKey: ["arDays"], queryFn: getAccountsReceivableDays });
+  const { data: profitMargin } = useQuery({ queryKey: ["profitMargin"], queryFn: getProfitMargin });
+  const { data: cashFlow } = useQuery({ queryKey: ["cashFlow"], queryFn: getCashFlow });
+
+  // --- Compliance & Safety KPIs ---
+  const { data: safety } = useQuery({ queryKey: ["safety"], queryFn: getSafetySummary });
+  const { data: reworkCost } = useQuery({ queryKey: ["reworkCost"], queryFn: getReworkCost });
+
+  // --- Resource Utilization & SPI ---
+  const { data: resourceUtilization } = useQuery({ queryKey: ["resourceUtilization"], queryFn: getResourceUtilization });
+  const { data: spiMap } = useQuery({ queryKey: ["spiMap"], queryFn: getSPIMap });
+
+  // --- Portfolio Map & Trend Chart ---
+  const { data: projectMap } = useQuery({ queryKey: ["projectMap"], queryFn: getProjectPortfolioMap });
+  const { data: trendChart } = useQuery({ queryKey: ["trendChart"], queryFn: getTrendChart });
 
   const activeProjects = projects?.filter(p => p.status === "In Progress") || [];
   const completedProjects = projects?.filter(p => p.status === "Completed") || [];
@@ -87,6 +110,17 @@ export default function DashboardOverview() {
       icon: Clock,
     }] : []),
   ];
+
+  // Type guards and default values for dashboard KPIs
+  const safeFinance = finance ?? { total_contract_value: 0 };
+  const safeArDays = arDays ?? { value: 0 };
+  const safeProfitMargin = profitMargin ?? { gross: 0, net: 0 };
+  const safeResourceUtilization = resourceUtilization ?? { percent: 0 };
+  const safeSafety = safety ?? { ltir: 0, benchmark: 0, open_issues: 0 };
+  const safeReworkCost = reworkCost ?? { percent: 0 };
+  const safeSpiMap = spiMap ?? { on_time: 0, at_risk: 0, delayed: 0 };
+  const safeProjectMap = Array.isArray(projectMap) ? projectMap : [];
+  const safeTrendChart = Array.isArray(trendChart) ? trendChart : [];
 
   return (
     <DashboardLayout>
@@ -309,6 +343,147 @@ export default function DashboardOverview() {
                   <p className="text-muted-foreground text-center py-4">No clients yet</p>
                 )}
               </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-4 mb-8">
+          {/* Executive Financial Health KPIs */}
+          <Card className="bg-card border-white/5 shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-lg font-bold">Total Contract Value</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-primary">{safeFinance.total_contract_value ? formatCurrency(safeFinance.total_contract_value) : "-"}</div>
+              <Link href="/dashboard/finance" className="text-xs text-primary underline">Drill Down</Link>
+            </CardContent>
+          </Card>
+          <Card className="bg-card border-white/5 shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-lg font-bold">Net Cash Flow (90d)</CardTitle>
+            </CardHeader>
+            
+            <CardContent>
+              {/* Placeholder for cash flow chart */}
+              <div className="h-24 flex items-center justify-center text-muted-foreground">[Chart]</div>
+              <Link href="/dashboard/finance" className="text-xs text-primary underline">Drill Down</Link>
+            </CardContent>
+          </Card>
+          <Card className="bg-card border-white/5 shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-lg font-bold">AR Days</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className={`text-3xl font-bold ${safeArDays.value > 45 ? 'text-red-500' : safeArDays.value > 30 ? 'text-orange-500' : 'text-green-500'}`}>{safeArDays.value ?? '-'}</div>
+              <Link href="/dashboard/finance" className="text-xs text-primary underline">Drill Down</Link>
+            </CardContent>
+          </Card>
+          <Card className="bg-card border-white/5 shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-lg font-bold">Profit Margin</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ProfitMarginChart data={safeProfitMargin} />
+              <Link href="/dashboard/finance" className="text-xs text-primary underline">Drill Down</Link>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-4 mb-8">
+          {/* Project Portfolio Health KPIs */}
+          <Card className="bg-card border-white/5 shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-lg font-bold">Projects On-Time</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-green-500">{safeSpiMap.on_time ?? '-'}</div>
+              <Link href="/dashboard/projects?status=on-time" className="text-xs text-primary underline">Drill Down</Link>
+            </CardContent>
+          </Card>
+          <Card className="bg-card border-white/5 shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-lg font-bold">Projects At-Risk</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-orange-500">{safeSpiMap.at_risk ?? '-'}</div>
+              <Link href="/dashboard/projects?status=at-risk" className="text-xs text-primary underline">Drill Down</Link>
+            </CardContent>
+          </Card>
+          <Card className="bg-card border-white/5 shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-lg font-bold">Projects Delayed</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-red-500">{safeSpiMap.delayed ?? '-'}</div>
+              <Link href="/dashboard/projects?status=delayed" className="text-xs text-primary underline">Drill Down</Link>
+            </CardContent>
+          </Card>
+          <Card className="bg-card border-white/5 shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-lg font-bold">Resource Utilization %</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-primary">{safeResourceUtilization.percent ?? '-'}</div>
+              <Link href="/dashboard/hr" className="text-xs text-primary underline">Drill Down</Link>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-3 mb-8">
+          {/* Compliance & Safety KPIs */}
+          <Card className="bg-card border-white/5 shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-lg font-bold">Lost Time Incident Rate (LTIR)</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className={`text-3xl font-bold ${safeSafety.ltir > safeSafety.benchmark ? 'text-red-500' : 'text-green-500'}`}>{safeSafety.ltir ?? '-'}</div>
+              <Link href="/dashboard/safety" className="text-xs text-primary underline">Drill Down</Link>
+            </CardContent>
+          </Card>
+          <Card className="bg-card border-white/5 shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-lg font-bold">Open Safety Issues</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-orange-500">{safeSafety.open_issues ?? '-'}</div>
+              <Link href="/dashboard/safety?status=open" className="text-xs text-primary underline">Drill Down</Link>
+            </CardContent>
+          </Card>
+          <Card className="bg-card border-white/5 shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-lg font-bold">Rework Cost %</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-primary">{safeReworkCost.percent ?? '-'}</div>
+              <Link href="/dashboard/finance?filter=rework" className="text-xs text-primary underline">Drill Down</Link>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="grid gap-8 lg:grid-cols-2 mb-8">
+          {/* Project Portfolio Map & Trend Chart */}
+          <Card className="border-white/5 bg-card">
+            <CardHeader>
+              <CardTitle className="text-lg font-display">Project Portfolio Map</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {projectMap ? (
+                <ProjectPortfolioMap data={safeProjectMap} />
+              ) : (
+                <div className="h-64 flex items-center justify-center text-muted-foreground">[Map]</div>
+              )}
+            </CardContent>
+          </Card>
+          <Card className="border-white/5 bg-card">
+            <CardHeader>
+              <CardTitle className="text-lg font-display">Budget vs. Actual vs. Earned Value</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {trendChart ? (
+                <BudgetTrendChart data={safeTrendChart} />
+              ) : (
+                <div className="h-64 flex items-center justify-center text-muted-foreground">[Trend Chart]</div>
+              )}
             </CardContent>
           </Card>
         </div>

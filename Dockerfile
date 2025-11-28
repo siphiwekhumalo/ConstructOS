@@ -12,12 +12,14 @@ FROM node:20-slim as frontend-builder
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm ci --only=production
+RUN npm ci # Install all dependencies including devDependencies
 
 COPY client/ ./client/
 COPY shared/ ./shared/
-COPY vite.config.ts tsconfig.json tailwind.config.ts postcss.config.mjs ./
+COPY vite.config.ts tsconfig.json tailwind.config.ts postcss.config.mjs vite-plugin-meta-images.ts ./
 COPY drizzle.config.ts ./
+COPY attached_assets/ ./attached_assets/
+COPY server/ ./server/
 
 RUN npm run build
 
@@ -47,6 +49,7 @@ COPY --from=backend-builder /usr/local/bin /usr/local/bin
 COPY backend/ ./backend/
 COPY manage.py ./
 COPY --from=frontend-builder /app/dist ./dist/
+COPY server/ ./server/
 
 RUN mkdir -p /app/staticfiles && \
     python manage.py collectstatic --noinput 2>/dev/null || true

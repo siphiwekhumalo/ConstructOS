@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: constructos-backend
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: constructos-backend
+  template:
+    metadata:
+      labels:
+        app: constructos-backend
+    spec:
+      containers:
+      - name: backend
+        image: <ACR_LOGIN_SERVER>/constructos-backend:latest
+        env:
+        - name: DJANGO_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: kv-secrets
+              key: django-secret-key
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: kv-secrets
+              key: postgres-admin
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: kv-secrets
+              key: redis-password
+        ports:
+        - containerPort: 8000
+        volumeMounts:
+        - name: secrets-store-inline
+          mountPath: /mnt/secrets-store
+      volumes:
+      - name: secrets-store-inline
+        csi:
+          driver: secrets-store.csi.k8s.io
+          readOnly: true
+          volumeAttributes:
+            secretProviderClass: "azure-kv"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: constructos-backend
+spec:
+  selector:
+    app: constructos-backend
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000

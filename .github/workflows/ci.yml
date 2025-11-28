@@ -1,0 +1,88 @@
+name: CI Pull Request Validation
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test_suite:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      POSTGRES_DB: test_db
+      POSTGRES_USER: test_user
+      POSTGRES_PASSWORD: test_pass
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: 5432
+    steps:
+    - name: ⬇️ Checkout Code
+      uses: actions/checkout@v4
+
+    # --- Python Microservices (Django/Pytest) ---
+    - name: 🐍 Setup Python and Install Django Dependencies
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    - name: 📦 Install Python Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r services/identity/requirements.txt
+        pip install -r services/ai/requirements.txt
+        pip install -r requirements.txt
+        pip install django_extensions
+    - name: 📦 Ensure pytest-django is installed
+      run: |
+        python -m pip install pytest-django
+    - name: 🐘 Start PostgreSQL
+      uses: harmon758/postgresql-action@v1
+      with:
+        postgresql version: '15'
+        postgresql db: test_db
+        postgresql user: test_user
+        postgresql password: test_pass
+    - name: Install dependencies
+      run: |
+        pip install .
+        pip install azure-storage-blob
+
+    - name: Run Django migrations
+      run: |
+        python manage.py migrate --settings=backend.settings
+
+    # --- React Frontend (Jest) ---
+    - name: 🟢 Setup Node.js and Install React Dependencies
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+    - name: ⚛️ Install Frontend Dependencies (Jest)
+      run: npm ci
+      working-directory: ./client
+    - name: 📦 Install Node Dependencies (Root)
+      run: npm ci
+      working-directory: .
+    - name: 🏃 Run Frontend Unit Tests (Jest)
+      run: npx jest --config jest.config.cjs --coverage --ci --testResultsProcessor=jest-junit
+      working-directory: ./client
+
+    # --- End-to-End UI Tests (Playwright) ---
+    # - name: 🌐 Install Playwright Browsers
+    #   run: npx playwright install --with-deps
+    #   working-directory: ./client
+    # - name: 🐳 Install Docker Compose
+    #   run: sudo curl -L "https://github.com/docker/compose/releases/download/v2.24.6/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose && sudo chmod +x /usr/local/bin/docker-compose
+    # - name: 🚀 Start Services for E2E Tests
+    #   run: |
+    #     docker-compose up -d
+    #     npx wait-on http://localhost:8000
+    # - name: 🏃 Run E2E Tests (Playwright)
+    #   run: npx playwright test
+    #   working-directory: ./client
+
+    - name: ⬆️ Upload Test Results and Artifacts
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-reports
+        path: |
+          reports/
+          client/playwright-report/

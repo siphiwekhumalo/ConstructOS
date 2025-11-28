@@ -5,6 +5,7 @@ from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny
 from rest_framework.authentication import SessionAuthentication
 from django.db.models import Q
+from django.db import models
 from .models import User, Event, AuditLog, Favorite
 from .serializers import UserSerializer, UserCreateSerializer, EventSerializer, AuditLogSerializer, FavoriteSerializer
 from .permissions import IsAuthenticated, IsSystemAdmin, IsFinanceManager, IsHRSpecialist, get_user_permissions
@@ -16,6 +17,9 @@ from .security import (
     AnomalyDetector,
     TokenBlacklist,
 )
+from backend.apps.construction.models import Project, Transaction
+from datetime import timedelta
+from django.utils import timezone
 
 
 class AuthMeView(APIView):
@@ -512,3 +516,84 @@ class ForceLogoutView(APIView):
             'user_id': str(target_user.id),
             'tokens_invalidated': True,
         }, status=status.HTTP_200_OK)
+
+
+class DashboardFinanceSummaryView(APIView):
+    def get(self, request):
+        # Aggregate total contract value for all signed/active projects
+        total_contract_value = Project.objects.filter(status__in=["Signed", "Active"]).aggregate(
+            total=models.Sum("budget")
+        )["total"] or 0
+        # Net cash flow over last 90 days
+        now = timezone.now()
+        start_date = now - timedelta(days=90)
+        transactions = Transaction.objects.filter(created_at__gte=start_date)
+        income = transactions.filter(type="income").aggregate(total=models.Sum("amount"))["total"] or 0
+        expense = transactions.filter(type="expense").aggregate(total=models.Sum("amount"))["total"] or 0
+        net_cash_flow = float(income) - float(expense)
+        # Project count for dashboard
+        total_projects = Project.objects.count()
+        # Client count for dashboard
+        from backend.apps.crm.models import Account
+        total_clients = Account.objects.filter(type="customer").count()
+        # Employee count for dashboard
+        from backend.apps.erp.models import Employee
+        total_employees = Employee.objects.count()
+        # Financial summary for dashboard
+        total_expenses = Transaction.objects.filter(type="expense").aggregate(total=models.Sum("amount"))["total"] or 0
+        return Response({
+            "total_contract_value": float(total_contract_value),
+            "net_cash_flow": net_cash_flow,
+            "profit_margin": {"gross": 0.22, "net": 0.14},
+            "projects": {"total": total_projects},
+            "clients": {"total": total_clients},
+            "employees": {"total": total_employees},
+            "financial": {"totalExpenses": float(total_expenses)},
+        })
+
+class DashboardARDaysView(APIView):
+    def get(self, request):
+        return Response({"value": 38})
+
+class DashboardProfitMarginView(APIView):
+    def get(self, request):
+        # Calculate profit margins from transactions
+        total_income = Transaction.objects.filter(type="income").aggregate(total=models.Sum("amount"))["total"] or 0
+        total_expense = Transaction.objects.filter(type="expense").aggregate(total=models.Sum("amount"))["total"] or 0
+        gross_profit = float(total_income) - float(total_expense)
+        gross_margin = (gross_profit / float(total_income)) if total_income else 0
+        # For net margin, assume net income = gross profit (unless taxes/other are tracked)
+        net_margin = gross_margin
+        return Response({"gross": round(gross_margin, 2), "net": round(net_margin, 2)})
+
+class DashboardCashFlowView(APIView):
+    def get(self, request):
+        return Response({"chart": [{"date": "2025-09-01", "in": 100000, "out": 80000}, {"date": "2025-10-01", "in": 120000, "out": 90000}]})
+
+class DashboardTrendChartView(APIView):
+    def get(self, request):
+        return Response([{"month": "2025-01", "budget": 100000, "actual": 95000, "earned": 90000}, {"month": "2025-02", "budget": 120000, "actual": 110000, "earned": 105000}])
+
+class DashboardReworkCostView(APIView):
+    def get(self, request):
+        return Response({"percent": 2.5})
+
+class DashboardSafetySummaryView(APIView):
+    def get(self, request):
+        return Response({"ltir": 1.8, "benchmark": 1.2, "open_issues": 4})
+
+class DashboardSPIMapView(APIView):
+    def get(self, request):
+        return Response({"on_time": 8, "at_risk": 3, "delayed": 2})
+
+class DashboardResourceUtilizationView(APIView):
+    def get(self, request):
+        return Response({"percent": 76})
+
+class DashboardProjectMapView(APIView):
+    def get(self, request):
+        return Response([
+            {"site_id": "SIT-JHB-001", "lat": -26.2041, "lng": 28.0473, "status": "on_time", "name": "Johannesburg Office Tower"},
+            {"site_id": "SIT-CPT-002", "lat": -33.9249, "lng": 18.4241, "status": "delayed", "name": "Cape Town Waterfront Hotel"},
+            {"site_id": "SIT-PTA-004", "lat": -25.7479, "lng": 28.2293, "status": "at_risk", "name": "Pretoria Medical Centre"},
+        ])

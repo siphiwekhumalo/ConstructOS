@@ -200,7 +200,7 @@ export function ChatMessagePane({
   const [newMessage, setNewMessage] = useState('');
   const [replyTo, setReplyTo] = useState<Message | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const typingTimeoutRef = useRef<NodeJS.Timeout>();
+  const typingTimeoutRef = useRef<NodeJS.Timeout>(undefined);
   
   const { data: room } = useChatRoom(roomId);
   const { data: initialMessages, isLoading } = useMessages(roomId);

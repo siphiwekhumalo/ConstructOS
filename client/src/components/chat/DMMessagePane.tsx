@@ -132,7 +132,7 @@ export function DMMessagePane({
 }: DMMessagePaneProps) {
   const [newMessage, setNewMessage] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const typingTimeoutRef = useRef<NodeJS.Timeout>();
+  const typingTimeoutRef = useRef<NodeJS.Timeout>(undefined);
   
   const { data: thread } = useDMThread(threadId);
   const { data: initialMessages, isLoading } = useDMMessages(threadId);

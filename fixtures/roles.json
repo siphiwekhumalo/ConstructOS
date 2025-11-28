@@ -1,0 +1,13 @@
+[
+  {"model": "core.userrole", "pk": 1, "fields": {"code": "system_admin", "name": "System Administrator"}},
+  {"model": "core.userrole", "pk": 2, "fields": {"code": "finance_manager", "name": "Finance Manager"}},
+  {"model": "core.userrole", "pk": 3, "fields": {"code": "sales_rep", "name": "Sales Representative"}},
+  {"model": "core.userrole", "pk": 4, "fields": {"code": "operations_specialist", "name": "Operations Specialist"}},
+  {"model": "core.userrole", "pk": 5, "fields": {"code": "site_manager", "name": "Site Manager"}},
+  {"model": "core.userrole", "pk": 6, "fields": {"code": "hr_specialist", "name": "HR Specialist"}},
+  {"model": "core.userrole", "pk": 7, "fields": {"code": "warehouse_clerk", "name": "Warehouse Clerk"}},
+  {"model": "core.userrole", "pk": 8, "fields": {"code": "field_worker", "name": "Field Worker"}},
+  {"model": "core.userrole", "pk": 9, "fields": {"code": "subcontractor", "name": "Subcontractor/Vendor"}},
+  {"model": "core.userrole", "pk": 10, "fields": {"code": "client", "name": "Client/Customer"}},
+  {"model": "core.userrole", "pk": 11, "fields": {"code": "executive", "name": "Executive Viewer"}}
+]

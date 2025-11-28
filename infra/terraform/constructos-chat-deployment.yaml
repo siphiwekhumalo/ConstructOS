@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: constructos-chat
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: constructos-chat
+  template:
+    metadata:
+      labels:
+        app: constructos-chat
+    spec:
+      containers:
+      - name: chat
+        image: <ACR_LOGIN_SERVER>/constructos-chat:latest
+        ports:
+        - containerPort: 8002
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: constructos-chat
+spec:
+  selector:
+    app: constructos-chat
+  ports:
+    - protocol: TCP
+      port: 8002
+      targetPort: 8002

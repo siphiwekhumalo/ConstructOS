@@ -1,0 +1,13 @@
+variable "location" { default = "East US" }
+variable "resource_group_name" { default = "constructos-rg" }
+variable "vnet_address_space" { default = ["10.0.0.0/16"] }
+variable "aks_subnet_prefix" { default = ["10.0.1.0/24"] }
+variable "postgres_subnet_prefix" { default = ["10.0.2.0/24"] }
+variable "redis_subnet_prefix" { default = ["10.0.3.0/24"] }
+variable "waf_subnet_prefix" { default = ["10.0.4.0/24"] }
+variable "acr_name" { default = "constructosacr" }
+variable "aks_name" { default = "constructos-aks" }
+variable "postgres_name" { default = "constructos-pg" }
+variable "redis_name" { default = "constructos-redis" }
+variable "keyvault_name" { default = "constructos-kv" }
+variable "appgw_name" { default = "constructos-appgw" }

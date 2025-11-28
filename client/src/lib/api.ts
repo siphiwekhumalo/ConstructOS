@@ -136,8 +136,14 @@ export interface ProjectCashflow {
 }
 
 export interface ExtendedProject extends Project {
+  id: string;
+  name: string;
+  location: string;
+  status: string;
+  progress: number;
+  budget: string;
   plannedProgress?: number;
-  actualCost?: string;
+  actualCost: string;
   nextMilestoneDate?: string;
   nextMilestoneName?: string;
   progress_variance?: number;
@@ -448,6 +454,38 @@ export async function updatePurchaseOrder(id: string, updates: Partial<InsertPur
 export async function getDashboardStats(): Promise<any> {
   const response = await authFetch(`${API_BASE}/analytics/dashboard/`);
   return handleResponse(response);
+}
+
+// --- KPI & Dashboard API Placeholders ---
+export async function getFinanceSummary() {
+  return handleResponse(await authFetch(`${API_BASE}/dashboard/finance-summary`));
+}
+export async function getAccountsReceivableDays() {
+  return handleResponse(await authFetch(`${API_BASE}/dashboard/ar-days`));
+}
+export async function getProfitMargin() {
+  return handleResponse(await authFetch(`${API_BASE}/dashboard/profit-margin`));
+}
+export async function getCashFlow() {
+  return handleResponse(await authFetch(`${API_BASE}/dashboard/cash-flow`));
+}
+export async function getSafetySummary() {
+  return handleResponse(await authFetch(`${API_BASE}/dashboard/safety-summary`));
+}
+export async function getReworkCost() {
+  return handleResponse(await authFetch(`${API_BASE}/dashboard/rework-cost`));
+}
+export async function getResourceUtilization() {
+  return handleResponse(await authFetch(`${API_BASE}/dashboard/resource-utilization`));
+}
+export async function getSPIMap() {
+  return handleResponse(await authFetch(`${API_BASE}/dashboard/spi-map`));
+}
+export async function getProjectPortfolioMap() {
+  return handleResponse(await authFetch(`${API_BASE}/dashboard/project-map`));
+}
+export async function getTrendChart() {
+  return handleResponse(await authFetch(`${API_BASE}/dashboard/trend-chart`));
 }
 
 export interface SearchResult {
