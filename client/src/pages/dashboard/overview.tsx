@@ -362,6 +362,7 @@ export default function DashboardOverview() {
             <CardHeader>
               <CardTitle className="text-lg font-bold">Net Cash Flow (90d)</CardTitle>
             </CardHeader>
+            
             <CardContent>
               {/* Placeholder for cash flow chart */}
               <div className="h-24 flex items-center justify-center text-muted-foreground">[Chart]</div>
