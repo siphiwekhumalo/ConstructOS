@@ -30,6 +30,7 @@ azure-keyvault-secrets>=4.7.0
 daphne>=4.1.0
 channels>=4.0.0
 Faker>=24.8.0
+django_extensions
 
 # Prophet for time series (optional - heavy dependency)
 # prophet>=1.1.5

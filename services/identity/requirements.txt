@@ -30,3 +30,4 @@ azure-keyvault-secrets>=4.7.0
 daphne>=4.1.0
 channels>=4.0.0
 pydantic-settings>=2.0.3
+django_extensions
