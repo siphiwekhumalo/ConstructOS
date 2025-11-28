@@ -1,0 +1,6 @@
+# Root requirements.txt for Docker build
+# Add any global Python dependencies here
+# You can also reference service requirements as needed
+Django>=4.2
+psycopg2-binary
+pytest
