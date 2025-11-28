@@ -3,4 +3,5 @@
 # You can also reference service requirements as needed
 Django>=4.2
 psycopg2-binary
+gunicorn
 pytest
