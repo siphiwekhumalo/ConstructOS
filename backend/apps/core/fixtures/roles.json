@@ -1,0 +1,13 @@
+[
+  {"role": "system_admin", "label": "System Administrator"},
+  {"role": "finance_manager", "label": "Finance Manager"},
+  {"role": "sales_rep", "label": "Sales Representative"},
+  {"role": "operations_specialist", "label": "Operations Specialist"},
+  {"role": "site_manager", "label": "Site Manager"},
+  {"role": "hr_specialist", "label": "HR Specialist"},
+  {"role": "warehouse_clerk", "label": "Warehouse Clerk"},
+  {"role": "field_worker", "label": "Field Worker"},
+  {"role": "subcontractor", "label": "Subcontractor/Vendor"},
+  {"role": "client", "label": "Client/Customer"},
+  {"role": "executive", "label": "Executive Viewer"}
+]

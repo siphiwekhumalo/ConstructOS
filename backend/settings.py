@@ -34,6 +34,7 @@ INSTALLED_APPS = [
     'backend.apps.construction',
     'backend.apps.ai',
     'backend.apps.chat',
+    'django_extensions',
 ]
 
 MIDDLEWARE = [

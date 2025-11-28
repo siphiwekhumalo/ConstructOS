@@ -11,6 +11,7 @@ from django.utils import timezone
 from factory.django import DjangoModelFactory
 
 from backend.apps.core.models import User
+from backend.apps.chat.models import ChatRoom, RoomMembership, Message
 from backend.apps.crm.models import Account, Contact, Lead, Opportunity, PipelineStage
 from backend.apps.erp.models import (
     Warehouse, Product, StockItem, Invoice, InvoiceLineItem,
@@ -390,3 +391,41 @@ class TransactionFactory(DjangoModelFactory):
     status = 'approved'
     category = 'Materials'
     type = 'expense'
+
+
+class ChatRoomFactory(DjangoModelFactory):
+    """Factory for ChatRoom model."""
+    class Meta:
+        model = ChatRoom
+    
+    id = factory.LazyFunction(uuid.uuid4)
+    name = factory.Sequence(lambda n: f'Room {n}')
+    description = factory.Faker('sentence')
+    room_type = 'public'
+    project_id = None
+    created_by = factory.LazyAttribute(lambda obj: str(obj.id))
+    is_archived = False
+
+
+class RoomMembershipFactory(DjangoModelFactory):
+    """Factory for RoomMembership model."""
+    class Meta:
+        model = RoomMembership
+    
+    id = factory.LazyFunction(uuid.uuid4)
+    room = factory.SubFactory(ChatRoomFactory)
+    user_id = factory.LazyAttribute(lambda obj: str(uuid.uuid4()))
+    role = 'member'
+
+
+class MessageFactory(DjangoModelFactory):
+    """Factory for Message model."""
+    class Meta:
+        model = Message
+    
+    id = factory.LazyFunction(uuid.uuid4)
+    room = factory.SubFactory(ChatRoomFactory)
+    sender_id = factory.LazyAttribute(lambda obj: str(uuid.uuid4()))
+    content = factory.Faker('sentence')
+    sent_at = factory.LazyFunction(timezone.now)
+    is_deleted = False

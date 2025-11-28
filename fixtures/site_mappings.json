@@ -1,0 +1,7 @@
+[
+  {"model": "core.sitemapping", "pk": 1, "fields": {"site_id": "SIT-JHB-001", "name": "Johannesburg Site"}},
+  {"model": "core.sitemapping", "pk": 2, "fields": {"site_id": "SIT-CPT-002", "name": "Cape Town Site"}},
+  {"model": "core.sitemapping", "pk": 3, "fields": {"site_id": "SIT-DBN-003", "name": "Durban Site"}},
+  {"model": "core.sitemapping", "pk": 4, "fields": {"site_id": "SIT-PTA-004", "name": "Pretoria Site"}},
+  {"model": "core.sitemapping", "pk": 5, "fields": {"site_id": "SIT-OTHER-999", "name": "Other Site"}}
+]

@@ -395,7 +395,9 @@ class DashboardView(APIView):
         total_budget = sum(float(p.budget) for p in projects)
         total_expenses = sum(float(t.amount) for t in transactions)
 
-        return Response({
+        equipment_total = equipment.count() if equipment.exists() else 0
+        equipment_active = equipment.filter(status='Active').count() if equipment.exists() else 0
+        dashboard_data = {
             'projects': {
                 'total': total_projects,
                 'active': active_projects,
@@ -413,14 +415,18 @@ class DashboardView(APIView):
                 'total': employees.count(),
             },
             'equipment': {
-                'total': equipment.count(),
-                'active': equipment.filter(status='Active').count(),
+                'total': equipment_total,
+                'active': equipment_active,
             },
             'safety': {
                 'totalInspections': inspections.count(),
                 'passed': inspections.filter(status='Passed').count(),
-            }
-        })
+            },
+            'net_cash_flow': total_budget - total_expenses,
+        }
+        if 'equipment' not in dashboard_data:
+            dashboard_data['equipment'] = {'total': 0, 'active': 0}
+        return Response(dashboard_data)
 
 
 class PowerBIConfigView(APIView):

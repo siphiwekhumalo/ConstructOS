@@ -29,6 +29,12 @@ class TestProjectViewSet:
     
     def test_create_project(self, api_client, create_account):
         account = create_account()
+        manager = None
+        try:
+            from backend.apps.core.models import User
+            manager = User.objects.create(username='manager1', email='manager1@example.com', role='site_manager', first_name='Manager', last_name='One')
+        except Exception:
+            pass
         project_data = {
             'name': 'New Office Building',
             'location': 'Sandton, Johannesburg',
@@ -36,6 +42,9 @@ class TestProjectViewSet:
             'budget': '25000000.00',
             'due_date': '2025-12-31',
             'progress': 0,
+            'planned_progress': 0,
+            'actual_cost': '0.00',
+            'manager': manager.id,
             'account': account.id,
         }
         response = api_client.post('/api/v1/projects/', project_data, format='json')
@@ -199,6 +208,12 @@ class TestEquipmentViewSet:
     
     def test_create_equipment(self, api_client, create_warehouse):
         warehouse = create_warehouse()
+        employee = None
+        try:
+            from backend.apps.erp.models import Employee
+            employee = Employee.objects.create(first_name='John', last_name='Doe', email='john.doe@example.com', employee_number='EMP-001')
+        except Exception:
+            pass
         equipment_data = {
             'name': 'Tower Crane TC-500',
             'status': 'operational',
@@ -207,6 +222,8 @@ class TestEquipmentViewSet:
             'serial_number': 'TC500-2024-001',
             'purchase_price': '5000000.00',
             'warehouse': warehouse.id,
+            'assigned_to': employee.id,
+            'created_at': '2025-01-01T00:00:00Z',
         }
         response = api_client.post('/api/v1/equipment/', equipment_data, format='json')
         assert response.status_code == status.HTTP_201_CREATED
@@ -248,7 +265,7 @@ class TestSafetyInspectionViewSet:
         safety_inspection_data['project'] = project
         SafetyInspection.objects.create(**safety_inspection_data)
         
-        response = api_client.get('/api/v1/safety-inspections/')
+        response = api_client.get('/api/v1/safety/inspections/')
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert 'results' in data
@@ -262,7 +279,7 @@ class TestSafetyInspectionViewSet:
             'inspector': 'Safety Officer Nkosi',
             'project': project.id,
         }
-        response = api_client.post('/api/v1/safety-inspections/', inspection_data, format='json')
+        response = api_client.post('/api/v1/safety/inspections/', inspection_data, format='json')
         assert response.status_code == status.HTTP_201_CREATED
         data = response.json()
         assert data['site'] == 'Sandton Construction Site'
@@ -274,7 +291,7 @@ class TestSafetyInspectionViewSet:
         inspection = SafetyInspection.objects.create(**safety_inspection_data)
         
         response = api_client.patch(
-            f'/api/v1/safety-inspections/{inspection.id}/',
+            f'/api/v1/safety/inspections/{inspection.id}/',
             {'status': 'completed', 'findings': 'All safety measures in place'},
             format='json'
         )
@@ -301,11 +318,11 @@ class TestSafetyInspectionViewSet:
             project=project,
         )
         
-        response = api_client.get('/api/v1/safety-inspections/', {'type': 'routine'})
+        response = api_client.get('/api/v1/safety/inspections/', {'type': 'routine'})
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
-        for inspection in data['results']:
-            assert inspection['type'] == 'routine'
+        for insp in data['results']:
+            assert insp['type'] == 'routine'
 
 
 @pytest.mark.django_db
@@ -329,18 +346,20 @@ class TestDocumentViewSet:
     
     def test_create_document(self, api_client, create_project):
         project = create_project()
-        document_data = {
-            'name': 'Contract.pdf',
-            'type': 'pdf',
-            'size': '2.5 MB',
-            'author': 'Legal Team',
-            'project': project.id,
-            'category': 'contracts',
-        }
-        response = api_client.post('/api/v1/documents/', document_data, format='json')
-        assert response.status_code == status.HTTP_201_CREATED
-        data = response.json()
-        assert data['name'] == 'Contract.pdf'
+        with open('backend/apps/construction/tests/test_files/contract.pdf', 'rb') as f:
+            document_data = {
+                'name': 'Contract.pdf',
+                'type': 'pdf',
+                'size': '2.5 MB',
+                'author': 'Legal Team',
+                'project': project.id,
+                'category': 'contracts',
+                'file': f,
+            }
+            response = api_client.post('/api/v1/documents/', document_data, format='multipart')
+            assert response.status_code == status.HTTP_201_CREATED
+            data = response.json()
+            assert data['name'] == 'Contract.pdf'
     
     def test_filter_documents_by_category(self, api_client, create_project):
         project = create_project()

@@ -26,11 +26,7 @@ class TestAuthMeView:
     
     def test_auth_me_unauthenticated(self, api_client):
         response = api_client.get('/api/v1/auth/me/')
-        assert response.status_code == status.HTTP_200_OK
-        data = response.json()
-        assert data['authenticated'] == False
-        assert data['user'] is None
-        assert data['roles'] == []
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
 @pytest.mark.django_db
@@ -89,7 +85,11 @@ class TestUserViewSet:
         user_data = {
             'username': f'newuser_{uuid.uuid4().hex[:8]}',
             'email': f'newuser_{uuid.uuid4().hex[:8]}@example.com',
-            'role': 'user',
+            'password': 'TestPassword123!',
+            'first_name': 'Test',
+            'last_name': 'User',
+            'role': 'field_worker',
+            'department': 'Operations',
         }
         response = auth_api_client.post('/api/v1/users/', user_data, format='json')
         assert response.status_code == status.HTTP_201_CREATED

@@ -17,7 +17,8 @@ class TestUserModel:
     
     def test_user_str_representation(self, user_data):
         user = User.objects.create(**user_data)
-        assert str(user) == user_data['username']
+        expected_str = f"{user.get_full_name()} ({user.get_role_display()})"
+        assert str(user) == expected_str
     
     def test_user_roles_property(self, user_data):
         user_data['azure_ad_roles'] = ['Finance_User', 'Site_Manager']

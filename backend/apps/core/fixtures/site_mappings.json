@@ -1,0 +1,7 @@
+[
+  {"site_id": "SIT-JHB-001", "name": "Johannesburg"},
+  {"site_id": "SIT-CPT-002", "name": "Cape Town"},
+  {"site_id": "SIT-DBN-003", "name": "Durban"},
+  {"site_id": "SIT-PTA-004", "name": "Pretoria"},
+  {"site_id": "SIT-OTHER-999", "name": "Other"}
+]
