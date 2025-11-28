@@ -136,8 +136,14 @@ export interface ProjectCashflow {
 }
 
 export interface ExtendedProject extends Project {
+  id: string;
+  name: string;
+  location: string;
+  status: string;
+  progress: number;
+  budget: string;
   plannedProgress?: number;
-  actualCost?: string;
+  actualCost: string;
   nextMilestoneDate?: string;
   nextMilestoneName?: string;
   progress_variance?: number;

@@ -205,7 +205,7 @@ export function useChatWebSocket(
   const [typingUsers, setTypingUsers] = useState<TypingUser[]>([]);
   const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set<string>());
   const wsRef = useRef<WebSocket | null>(null);
-  const reconnectTimeoutRef = useRef<NodeJS.Timeout>();
+  const reconnectTimeoutRef = useRef<NodeJS.Timeout>(undefined);
   const queryClient = useQueryClient();
 
   const connect = useCallback(() => {
@@ -464,7 +464,7 @@ export function useDMWebSocket(
   const [messages, setMessages] = useState<DirectMessage[]>([]);
   const [typingUsers, setTypingUsers] = useState<TypingUser[]>([]);
   const wsRef = useRef<WebSocket | null>(null);
-  const reconnectTimeoutRef = useRef<NodeJS.Timeout>();
+  const reconnectTimeoutRef = useRef<NodeJS.Timeout>(undefined);
   const queryClient = useQueryClient();
 
   const connect = useCallback(() => {

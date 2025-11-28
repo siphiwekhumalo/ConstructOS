@@ -111,6 +111,17 @@ export default function DashboardOverview() {
     }] : []),
   ];
 
+  // Type guards and default values for dashboard KPIs
+  const safeFinance = finance ?? { total_contract_value: 0 };
+  const safeArDays = arDays ?? { value: 0 };
+  const safeProfitMargin = profitMargin ?? { gross: 0, net: 0 };
+  const safeResourceUtilization = resourceUtilization ?? { percent: 0 };
+  const safeSafety = safety ?? { ltir: 0, benchmark: 0, open_issues: 0 };
+  const safeReworkCost = reworkCost ?? { percent: 0 };
+  const safeSpiMap = spiMap ?? { on_time: 0, at_risk: 0, delayed: 0 };
+  const safeProjectMap = Array.isArray(projectMap) ? projectMap : [];
+  const safeTrendChart = Array.isArray(trendChart) ? trendChart : [];
+
   return (
     <DashboardLayout>
       <div className="space-y-8">
@@ -343,7 +354,7 @@ export default function DashboardOverview() {
               <CardTitle className="text-lg font-bold">Total Contract Value</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-primary">{finance?.total_contract_value ? formatCurrency(finance.total_contract_value) : "-"}</div>
+              <div className="text-3xl font-bold text-primary">{safeFinance.total_contract_value ? formatCurrency(safeFinance.total_contract_value) : "-"}</div>
               <Link href="/dashboard/finance" className="text-xs text-primary underline">Drill Down</Link>
             </CardContent>
           </Card>
@@ -362,7 +373,7 @@ export default function DashboardOverview() {
               <CardTitle className="text-lg font-bold">AR Days</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className={`text-3xl font-bold ${arDays?.value > 45 ? 'text-red-500' : arDays?.value > 30 ? 'text-orange-500' : 'text-green-500'}`}>{arDays?.value ?? '-'}</div>
+              <div className={`text-3xl font-bold ${safeArDays.value > 45 ? 'text-red-500' : safeArDays.value > 30 ? 'text-orange-500' : 'text-green-500'}`}>{safeArDays.value ?? '-'}</div>
               <Link href="/dashboard/finance" className="text-xs text-primary underline">Drill Down</Link>
             </CardContent>
           </Card>
@@ -371,11 +382,7 @@ export default function DashboardOverview() {
               <CardTitle className="text-lg font-bold">Profit Margin</CardTitle>
             </CardHeader>
             <CardContent>
-              {profitMargin ? (
-                <ProfitMarginChart data={profitMargin} />
-              ) : (
-                <div className="h-24 flex items-center justify-center text-muted-foreground">[Donut/Bar Chart]</div>
-              )}
+              <ProfitMarginChart data={safeProfitMargin} />
               <Link href="/dashboard/finance" className="text-xs text-primary underline">Drill Down</Link>
             </CardContent>
           </Card>
@@ -388,7 +395,7 @@ export default function DashboardOverview() {
               <CardTitle className="text-lg font-bold">Projects On-Time</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-green-500">{spiMap?.on_time ?? '-'}</div>
+              <div className="text-3xl font-bold text-green-500">{safeSpiMap.on_time ?? '-'}</div>
               <Link href="/dashboard/projects?status=on-time" className="text-xs text-primary underline">Drill Down</Link>
             </CardContent>
           </Card>
@@ -397,7 +404,7 @@ export default function DashboardOverview() {
               <CardTitle className="text-lg font-bold">Projects At-Risk</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-orange-500">{spiMap?.at_risk ?? '-'}</div>
+              <div className="text-3xl font-bold text-orange-500">{safeSpiMap.at_risk ?? '-'}</div>
               <Link href="/dashboard/projects?status=at-risk" className="text-xs text-primary underline">Drill Down</Link>
             </CardContent>
           </Card>
@@ -406,7 +413,7 @@ export default function DashboardOverview() {
               <CardTitle className="text-lg font-bold">Projects Delayed</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-red-500">{spiMap?.delayed ?? '-'}</div>
+              <div className="text-3xl font-bold text-red-500">{safeSpiMap.delayed ?? '-'}</div>
               <Link href="/dashboard/projects?status=delayed" className="text-xs text-primary underline">Drill Down</Link>
             </CardContent>
           </Card>
@@ -415,7 +422,7 @@ export default function DashboardOverview() {
               <CardTitle className="text-lg font-bold">Resource Utilization %</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-primary">{resourceUtilization?.percent ?? '-'}</div>
+              <div className="text-3xl font-bold text-primary">{safeResourceUtilization.percent ?? '-'}</div>
               <Link href="/dashboard/hr" className="text-xs text-primary underline">Drill Down</Link>
             </CardContent>
           </Card>
@@ -428,7 +435,7 @@ export default function DashboardOverview() {
               <CardTitle className="text-lg font-bold">Lost Time Incident Rate (LTIR)</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className={`text-3xl font-bold ${safety?.ltir > safety?.benchmark ? 'text-red-500' : 'text-green-500'}`}>{safety?.ltir ?? '-'}</div>
+              <div className={`text-3xl font-bold ${safeSafety.ltir > safeSafety.benchmark ? 'text-red-500' : 'text-green-500'}`}>{safeSafety.ltir ?? '-'}</div>
               <Link href="/dashboard/safety" className="text-xs text-primary underline">Drill Down</Link>
             </CardContent>
           </Card>
@@ -437,7 +444,7 @@ export default function DashboardOverview() {
               <CardTitle className="text-lg font-bold">Open Safety Issues</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-orange-500">{safety?.open_issues ?? '-'}</div>
+              <div className="text-3xl font-bold text-orange-500">{safeSafety.open_issues ?? '-'}</div>
               <Link href="/dashboard/safety?status=open" className="text-xs text-primary underline">Drill Down</Link>
             </CardContent>
           </Card>
@@ -446,7 +453,7 @@ export default function DashboardOverview() {
               <CardTitle className="text-lg font-bold">Rework Cost %</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-primary">{reworkCost?.percent ?? '-'}</div>
+              <div className="text-3xl font-bold text-primary">{safeReworkCost.percent ?? '-'}</div>
               <Link href="/dashboard/finance?filter=rework" className="text-xs text-primary underline">Drill Down</Link>
             </CardContent>
           </Card>
@@ -460,7 +467,7 @@ export default function DashboardOverview() {
             </CardHeader>
             <CardContent>
               {projectMap ? (
-                <ProjectPortfolioMap data={projectMap} />
+                <ProjectPortfolioMap data={safeProjectMap} />
               ) : (
                 <div className="h-64 flex items-center justify-center text-muted-foreground">[Map]</div>
               )}
@@ -472,7 +479,7 @@ export default function DashboardOverview() {
             </CardHeader>
             <CardContent>
               {trendChart ? (
-                <BudgetTrendChart data={trendChart} />
+                <BudgetTrendChart data={safeTrendChart} />
               ) : (
                 <div className="h-64 flex items-center justify-center text-muted-foreground">[Trend Chart]</div>
               )}
