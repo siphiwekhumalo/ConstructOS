@@ -37,3 +37,4 @@ joblib
 numpy
 pandas
 scikit-learn
+factory-boy

@@ -52,10 +52,6 @@ externalPort = 5000
 localPort = 43825
 externalPort = 3003
 
-[[ports]]
-localPort = 44991
-externalPort = 6800
-
 [env]
 PORT = "5000"
 
@@ -71,10 +67,6 @@ author = "agent"
 task = "workflow.run"
 args = "Start application"
 
-[[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "Start Game"
-
 [[workflows.workflow]]
 name = "Start application"
 author = "agent"
@@ -84,17 +76,9 @@ task = "shell.exec"
 args = "npm run dev"
 waitForPort = 5000
 
-[[workflows.workflow]]
-name = "Start Game"
-author = "agent"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "npm run dev"
-waitForPort = 5000
-
 [agent]
 mockupState = "FULLSTACK"
+expertMode = true
 
 [userenv]
 
